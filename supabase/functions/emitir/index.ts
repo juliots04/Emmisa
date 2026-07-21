@@ -9,6 +9,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { emitirApisunat, type DocData, type Emisor } from './apisunat.ts'
+import { emitirSimulado } from './simulado.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -83,9 +84,10 @@ Deno.serve(async (req) => {
     if (credentials) {
       outcome = await emitirApisunat(docData, emisor, credentials)
     } else {
+      // Sin credenciales -> simulación de alta fidelidad. En un reintento
+      // (ya hay ticket) un comprobante 'pendiente' se resuelve a 'aceptado'.
       simulado = true
-      const numero = `${doc.serie}-${String(doc.correlativo).padStart(8, '0')}`
-      outcome = { estado: 'aceptado' as const, cdr: `SIMULADO-${numero}`, mensaje: 'Aceptado (SIMULADO — configura credenciales para emitir de verdad)' }
+      outcome = emitirSimulado(docData, Boolean(doc.sunat_ticket))
     }
 
     const hash = outcome.hash ?? `SIM-${doc.serie}-${doc.correlativo}`

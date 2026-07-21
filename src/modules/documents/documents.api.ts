@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { EmitResult } from '@/modules/sunat'
+import { simular, type EmitResult } from '@/modules/sunat'
 import type { DocumentRow, TipoDoc } from '@/types'
 
 export interface EmitLine {
@@ -117,24 +117,59 @@ export async function emitirComprobante(params: EmitParams) {
   return await emitirEnMotor(reserved.id)
 }
 
-/** Llama a la Edge Function; si falla, marca el documento como simulado localmente. */
+/**
+ * Llama a la Edge Function `emitir` (motor real). Si la función no está desplegada
+ * —o si activas VITE_SUNAT_SIMULADO=true— cae a una SIMULACIÓN local de alta
+ * fidelidad que persiste el estado igual que el motor real (para no romper el flujo).
+ */
 export async function emitirEnMotor(documentId: string) {
-  try {
-    const { data, error } = await supabase.functions.invoke('emitir', { body: { documentId } })
-    if (error) throw error
-    return { document: data.document as DocumentRow, result: { ...data.result } as EmitResult }
-  } catch {
-    // Fallback local (la Edge Function aún no está desplegada): NO deja el doc colgado.
-    const { data: doc, error } = await supabase
-      .from('documents')
-      .update({ estado_sunat: 'aceptado', cdr: 'SIMULADO-LOCAL' })
-      .eq('id', documentId)
-      .select()
-      .single()
-    if (error) throw error
-    const result: EmitResult = { estado: 'aceptado', simulado: true, mensaje: 'Aceptado (SIMULADO local — despliega la Edge Function `emitir` para emitir de verdad)' }
-    return { document: doc as DocumentRow, result }
+  const forzarSimulado = import.meta.env.VITE_SUNAT_SIMULADO === 'true'
+  if (!forzarSimulado) {
+    try {
+      const { data, error } = await supabase.functions.invoke('emitir', { body: { documentId } })
+      if (error) throw error
+      return { document: data.document as DocumentRow, result: { ...data.result } as EmitResult }
+    } catch {
+      // La Edge Function no está desplegada -> simulación local.
+    }
   }
+  return await simularYPersistir(documentId)
+}
+
+/** Simula la emisión (sin SUNAT) y persiste el resultado en el documento. */
+async function simularYPersistir(documentId: string) {
+  const { data: doc0, error: e0 } = await supabase
+    .from('documents')
+    .select('*')
+    .eq('id', documentId)
+    .single()
+  if (e0) throw e0
+  const d = doc0 as unknown as {
+    tipo_doc: string
+    serie: string
+    correlativo: number
+    total: number | string
+    receptor_num_doc?: string | null
+    sunat_ticket?: string | null
+  }
+  const sim = simular(
+    { tipoDoc: d.tipo_doc, serie: d.serie, correlativo: d.correlativo, numDoc: d.receptor_num_doc, total: Number(d.total) },
+    { resolverPendiente: Boolean(d.sunat_ticket) },
+  )
+  const { data: doc, error } = await supabase
+    .from('documents')
+    .update({
+      estado_sunat: sim.estado,
+      cdr: sim.cdr ?? null,
+      hash: sim.hash ?? null,
+      sunat_ticket: sim.ticket ?? null,
+      sunat_error: sim.estado === 'rechazado' ? sim.mensaje : null,
+    })
+    .eq('id', documentId)
+    .select()
+    .single()
+  if (error) throw error
+  return { document: doc as DocumentRow, result: { ...sim } as EmitResult }
 }
 
 /** Reintenta la emisión/consulta de estado de un comprobante pendiente o rechazado. */

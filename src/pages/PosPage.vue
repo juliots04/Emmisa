@@ -162,13 +162,18 @@
         <q-card class="k-cart-col">
           <q-card-section class="k-cart-pad">
             <!-- Tipo de comprobante · control segmentado -->
-            <div class="k-seg q-mb-md">
+            <div
+              class="k-seg q-mb-md"
+              role="group"
+              aria-label="Tipo de comprobante"
+            >
               <button
                 v-for="o in tipoOptions"
                 :key="o.value"
                 type="button"
                 class="k-seg-btn"
                 :class="{ 'k-seg-btn--on': tipoDoc === o.value }"
+                :aria-pressed="tipoDoc === o.value"
                 @click="tipoDoc = o.value"
               >
                 {{ o.label }}
@@ -347,13 +352,18 @@
                     hide-bottom-space
                   >
                     <template #append>
-                      <div class="k-seg k-seg--mini">
+                      <div
+                        class="k-seg k-seg--mini"
+                        role="group"
+                        aria-label="Tipo de descuento"
+                      >
                         <button
                           v-for="m in descuentoModos"
                           :key="m.value"
                           type="button"
                           class="k-seg-btn"
                           :class="{ 'k-seg-btn--on': descuentoModo === m.value }"
+                          :aria-pressed="descuentoModo === m.value"
                           @click="descuentoModo = m.value"
                         >
                           {{ m.label }}
@@ -391,18 +401,23 @@
               <div class="k-section-label">
                 Forma de pago
               </div>
-              <div class="k-pay-grid">
+              <div
+                class="k-pay-grid"
+                role="group"
+                aria-label="Forma de pago"
+              >
                 <button
                   v-for="m in metodosPago"
                   :key="m.value"
                   type="button"
                   class="k-pay"
                   :class="{ 'k-pay--on': formaPago === m.value }"
+                  :aria-pressed="formaPago === m.value"
                   @click="formaPago = m.value"
                 >
                   <img
                     :src="m.logo"
-                    :alt="m.label"
+                    alt=""
                     class="k-pay-logo"
                     width="30"
                     height="30"
@@ -1025,10 +1040,22 @@ onMounted(async () => {
 .k-seg-btn:hover {
   color: var(--k-text);
 }
+.k-seg-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 70%, transparent);
+}
 .k-seg-btn--on {
   background: var(--k-surface);
   color: var(--q-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+/* En oscuro, --k-surface es más OSCURO que el riel (--k-surface-2): el segmento
+   activo se hunde y la sombra desaparece. Usamos el tinte índigo + aro (mismo
+   patrón que .k-pay--on) para que Boleta/Factura se distinga con claridad. */
+.body--dark .k-seg-btn--on {
+  background: var(--k-active-bg);
+  color: var(--k-active-text);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--q-primary) 45%, transparent);
 }
 /* Variante mini para el sufijo S//% del descuento */
 .k-seg--mini {
@@ -1146,10 +1173,14 @@ onMounted(async () => {
 .k-pay:hover {
   color: var(--k-text);
 }
+.k-pay:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 70%, transparent);
+}
 .k-pay--on {
   background: var(--k-active-bg);
   color: var(--k-active-text);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 65%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 70%, transparent);
 }
 .k-pay-logo {
   border-radius: 9px;
@@ -1180,7 +1211,11 @@ onMounted(async () => {
 }
 .k-denom:hover {
   box-shadow: 0 0 0 1px var(--k-border-hover);
-  background: color-mix(in srgb, var(--k-surface-2) 60%, var(--q-primary));
+  background: color-mix(in srgb, var(--k-surface-2) 60%, var(--k-surface));
+}
+.k-denom:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 70%, transparent);
 }
 
 /* ---------- Botón cobrar ---------- */
