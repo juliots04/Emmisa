@@ -1,0 +1,208 @@
+/* ============================================================
+   Konversa · Tema minimalista (estilo Google / Linear)
+   Tipografía: Hanken Grotesk (texto) + JetBrains Mono (labels)
+   Doble modo: claro y oscuro. Quasar alterna .body--dark / .body--light.
+   Toda regla usa tokens var(--k-...) definidos por modo más abajo.
+   ============================================================ */
+
+:root {
+  /* Marca (idéntica en ambos modos) */
+  --q-primary: #6366f1; /* índigo */
+  --q-secondary: #8b8b9e;
+  --q-positive: #22c55e;
+  --q-negative: #ef4444;
+  --q-warning: #f59e0b;
+  --q-info: #38bdf8;
+}
+
+/* ---------- Tokens · modo OSCURO ---------- */
+.body--dark {
+  --k-bg: #0a0a0c; /* fondo de la página */
+  --k-surface: #161619; /* tarjetas / contenedores */
+  --k-surface-2: #1f1f24; /* inputs / hover */
+  --k-border: rgba(255, 255, 255, 0.07);
+  --k-border-hover: rgba(255, 255, 255, 0.16);
+  --k-text: #f4f4f6;
+  --k-muted: #9a9aa6;
+  --k-active-bg: rgba(99, 102, 241, 0.14);
+  --k-active-text: #c7d2fe;
+  --k-radius: 20px;
+  --k-radius-sm: 14px;
+}
+
+/* ---------- Tokens · modo CLARO ---------- */
+.body--light {
+  --k-bg: #f6f7f9; /* fondo gris muy claro */
+  --k-surface: #ffffff; /* tarjetas blancas */
+  --k-surface-2: #eef0f3; /* inputs / hover */
+  --k-border: rgba(0, 0, 0, 0.08);
+  --k-border-hover: rgba(0, 0, 0, 0.16);
+  --k-text: #18181b;
+  --k-muted: #6b7280;
+  --k-active-bg: rgba(99, 102, 241, 0.1);
+  --k-active-text: #4338ca;
+  --k-radius: 20px;
+  --k-radius-sm: 14px;
+}
+
+/* ---------- Base ---------- */
+body {
+  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  letter-spacing: 0.1px;
+  -webkit-font-smoothing: antialiased;
+}
+.body--dark,
+.body--light {
+  background: var(--k-bg);
+  color: var(--k-text);
+}
+.q-page-container,
+.q-page {
+  background: var(--k-bg);
+}
+
+/* ---------- Tipografía ---------- */
+.text-h1,
+.text-h2,
+.text-h3,
+.text-h4,
+.text-h5,
+.text-h6 {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+}
+.text-caption,
+.q-item__label--header,
+.q-table th {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: 0.3px;
+}
+
+/* ---------- Contenedores / tarjetas ---------- */
+.q-card {
+  background: var(--k-surface);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  box-shadow: none;
+}
+.q-banner {
+  background: var(--k-surface);
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+}
+.q-menu,
+.q-dialog__inner > .q-card {
+  border-radius: var(--k-radius);
+}
+
+/* ---------- Botones ---------- */
+.q-btn {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+.q-btn.q-btn--round,
+.q-btn.q-btn--fab {
+  border-radius: 50%;
+}
+
+/* ---------- Inputs: minimalista SIN bordes (relleno suave tipo tarjeta) ---------- */
+.q-field--outlined .q-field__control {
+  border-radius: var(--k-radius-sm);
+  background: var(--k-surface-2);
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+/* Sin borde en reposo, hover ni foco (Quasar lo dibuja con :before/:after). */
+.q-field--outlined .q-field__control:before,
+.q-field--outlined .q-field__control:after {
+  border: none;
+}
+/* Foco: sin borde, solo un halo suave en indigo. */
+.q-field--outlined.q-field--focused .q-field__control {
+  box-shadow: 0 0 0 2px var(--k-active-bg);
+}
+/* Error: halo rojo (sin borde) para que la validación siga siendo visible. */
+.q-field--outlined.q-field--error .q-field__control {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-negative) 30%, transparent);
+}
+/* Los campos NO se estiran a la altura de su fila: si un campo reserva espacio
+   para su mensaje de error/hint, no agranda ni desalinea a sus vecinos.
+   (Causa de las "muescas" entre campos rellenos en una misma fila.) */
+.q-field--outlined {
+  align-self: flex-start;
+}
+
+/* ---------- Header / Drawer ---------- */
+.q-header {
+  background: var(--k-bg) !important;
+  border-bottom: 1px solid var(--k-border);
+  color: var(--k-text) !important;
+}
+.q-drawer {
+  background: var(--k-bg) !important;
+}
+.q-drawer--bordered {
+  border-right: 1px solid var(--k-border) !important;
+}
+.q-drawer .q-item {
+  border-radius: 12px;
+  margin: 3px 10px;
+  min-height: 44px;
+  color: var(--k-muted);
+}
+.q-drawer .q-item.q-router-link--active {
+  background: var(--k-active-bg);
+  color: var(--k-active-text);
+  font-weight: 600;
+}
+.q-item__label--header {
+  color: var(--k-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* ---------- Tablas ---------- */
+.q-table__card,
+.q-table {
+  background: transparent;
+  color: var(--k-text);
+}
+.q-table th {
+  color: var(--k-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.q-table tbody td {
+  border-color: var(--k-border);
+}
+
+/* ---------- Scrollbar sutil ---------- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--k-surface-2);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- Marca / logo ---------- */
+.k-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: var(--q-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+}
