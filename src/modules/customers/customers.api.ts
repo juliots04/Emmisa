@@ -35,3 +35,25 @@ export async function createCustomer(companyId: string, input: NewCustomer): Pro
   if (error) throw error
   return data as Customer
 }
+
+export async function updateCustomer(id: string, input: NewCustomer): Promise<Customer> {
+  const { data, error } = await supabase
+    .from('customers')
+    .update({
+      denominacion: input.denominacion,
+      tipo_doc: input.tipo_doc ?? '1',
+      num_doc: input.num_doc ?? null,
+      direccion: input.direccion ?? null,
+      email: input.email ?? null,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as Customer
+}
+
+export async function deleteCustomer(id: string): Promise<void> {
+  const { error } = await supabase.from('customers').delete().eq('id', id)
+  if (error) throw error
+}

@@ -1,5 +1,5 @@
 // ============================================================
-// Sistema de notificaciones global de Konversa.
+// Sistema de notificaciones global de Emmisa.
 // Reemplaza a $q.notify con toasts animados (ver components/ToastHost.vue).
 // API compatible con la firma que ya usa la app: { type, message, caption }.
 //

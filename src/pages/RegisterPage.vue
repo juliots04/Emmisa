@@ -6,8 +6,8 @@
           <!-- Panel de branding + beneficios -->
           <div class="k-reg-aside col-5 gt-sm column justify-between">
             <div class="row items-center q-gutter-sm">
-              <div class="k-reg-logo">K</div>
-              <span class="k-reg-brand">Konversa</span>
+              <img class="k-reg-logo" src="/brand/badge.svg" alt="" aria-hidden="true" />
+              <span class="k-reg-brand">Emmisa</span>
             </div>
 
             <div>

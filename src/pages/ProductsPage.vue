@@ -16,7 +16,7 @@
     </q-table>
 
     <!-- Crear / Editar -->
-    <q-dialog v-model="show">
+    <q-dialog v-model="show" :maximized="$q.screen.lt.sm">
       <q-card style="width: 720px; max-width: 95vw">
         <q-card-section class="row items-center q-pb-none">
           <div class="text-h6">{{ editingId ? 'Editar producto' : 'Nuevo producto' }}</div>
@@ -30,19 +30,18 @@
           no-caps
           active-color="primary"
           indicator-color="primary"
-          class="text-grey"
+          class="text-muted"
         >
           <q-tab name="general" label="General" />
           <q-tab name="almacen" label="Almacén" />
-          <q-tab name="compra" label="Compra" />
           <q-tab name="adicional" label="Adicional" />
         </q-tabs>
         <q-separator />
 
         <q-tab-panels v-model="tab" animated>
           <!-- GENERAL -->
-          <q-tab-panel name="general" class="q-gutter-md">
-            <div class="row q-col-gutter-md">
+          <q-tab-panel name="general" class="q-gutter-y-md">
+            <div class="row q-col-gutter-x-lg">
               <q-input
                 v-model="form.nombre"
                 class="col-12 col-sm-8"
@@ -65,7 +64,7 @@
             <q-input v-model="form.nombre_secundario" outlined label="Nombre secundario" />
             <q-input v-model="form.descripcion" outlined type="textarea" autogrow label="Descripción" />
 
-            <div class="row q-col-gutter-md">
+            <div class="row q-col-gutter-x-lg">
               <q-input v-model="form.sku" class="col-6 col-sm-4" outlined label="Código interno" />
               <q-input
                 v-model="form.barcode"
@@ -85,7 +84,7 @@
               />
             </div>
 
-            <div class="row q-col-gutter-md">
+            <div class="row q-col-gutter-x-lg">
               <q-select
                 v-model="form.tipo_afectacion"
                 class="col-12 col-sm-6"
@@ -112,6 +111,19 @@
                 lazy-rules              />
             </div>
 
+            <div class="row q-col-gutter-x-lg">
+              <q-input
+                v-model.number="form.costo"
+                class="col-12 col-sm-6"
+                outlined
+                type="number"
+                label="Costo de compra (unitario)"
+                hint="Para calcular tu margen/utilidad"
+                :rules="costRules"
+                lazy-rules
+              />
+            </div>
+
             <div class="row items-center justify-between">
               <q-toggle
                 v-model="form.incluye_igv"
@@ -127,12 +139,12 @@
           </q-tab-panel>
 
           <!-- ALMACEN -->
-          <q-tab-panel name="almacen" class="q-gutter-md">
-            <div v-if="editingId" class="text-caption text-grey">
+          <q-tab-panel name="almacen" class="q-gutter-y-md">
+            <div v-if="editingId" class="text-caption text-muted">
               El stock se ajusta desde el módulo <b>Inventario</b>.
             </div>
             <template v-else>
-              <div v-if="warehouses.length === 0" class="text-caption text-grey">
+              <div v-if="warehouses.length === 0" class="text-caption text-muted">
                 Aún no hay almacenes (créalos en Inventario). El stock inicial es opcional.
               </div>
               <q-select
@@ -145,7 +157,7 @@
                 map-options
                 label="Almacén"
               />
-              <div class="row q-col-gutter-md">
+              <div class="row q-col-gutter-x-lg">
                 <q-input
                   v-model.number="form.stock_inicial"
                   class="col-6"
@@ -166,22 +178,9 @@
             </template>
           </q-tab-panel>
 
-          <!-- COMPRA -->
-          <q-tab-panel name="compra" class="q-gutter-md">
-            <q-input
-              v-model.number="form.costo"
-              outlined
-              type="number"
-              label="Costo de compra (unitario)"
-              hint="Para calcular tu margen/utilidad"
-              :rules="costRules"
-              lazy-rules
-            />
-          </q-tab-panel>
-
           <!-- ADICIONAL -->
           <q-tab-panel name="adicional">
-            <div class="row q-col-gutter-md">
+            <div class="row q-col-gutter-x-lg">
               <q-input
                 v-model="form.codigo_sunat"
                 class="col-12 col-sm-6"

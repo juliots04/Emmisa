@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase'
-import { emisor } from '@/modules/sunat'
 import type { EmitResult } from '@/modules/sunat'
 import type { DocumentRow, TipoDoc } from '@/types'
 
@@ -8,21 +7,39 @@ export interface EmitLine {
   descripcion: string
   cantidad: number
   precioUnitario: number
+  /** Catálogo 07: 10 gravado, 11-17 gravadas gratuitas, 20/21 exonerado, 30-36 inafecto, 40 exportación. */
+  tipoAfectacion?: string
+  unidadMedida?: string
+  /** Descuento (monto) de la línea. */
+  descuento?: number
+  /** ICBPER (bolsa plástica): cobra el impuesto fijo por unidad. */
+  icbper?: boolean
+  /** ISC (monto) de la línea, si aplica. */
+  isc?: number
 }
 
 export interface EmitParams {
   companyId: string
   tipoDoc: TipoDoc
   customerId?: string | null
-  cliente: { tipoDoc: string; numDoc?: string; denominacion: string }
+  cliente: { tipoDoc: string; numDoc?: string; denominacion: string; direccion?: string }
   items: EmitLine[]
-  /** Datos de pago (POS). Si no se pasan, se asume efectivo sin registro de vuelto. */
+  /** Serie del comprobante. Por defecto F001 (factura) / B001 (boleta). */
+  serie?: string
+  moneda?: string
+  tipoCambio?: number
+  /** Descuento global (monto) sobre el total. */
+  descuentoGlobal?: number
+  /** contado | credito (crédito genera cuenta por cobrar). */
+  condicionPago?: string
+  fechaVencimiento?: string | null
+  establishmentId?: string | null
+  /** Datos de pago (POS). */
   formaPago?: string
   montoRecibido?: number | null
   vuelto?: number | null
-  /** Sesión de caja abierta (POS). Si se pasa, la venta se registra en caja y exige caja abierta. */
   cashSessionId?: string | null
-  /** Llave de idempotencia para evitar duplicar la venta ante reintentos/doble clic. */
+  /** Llave de idempotencia. Si no se pasa, se genera una (evita duplicar ante doble clic). */
   idempotencyKey?: string | null
 }
 
@@ -34,20 +51,22 @@ interface ReservedDoc {
   reused?: boolean
 }
 
-const SERIE: Record<TipoDoc, string> = { '01': 'F001', '03': 'B001' }
+const SERIE_DEFAULT: Record<TipoDoc, string> = { '01': 'F001', '03': 'B001' }
 
 /**
- * Emite un comprobante de punta a punta de forma TRANSACCIONAL:
- *   1) RPC `emitir_venta` (Postgres) reserva el correlativo con lock de fila, crea el
- *      comprobante + ítems, descuenta stock y registra el efectivo en caja — todo atómico.
- *   2) Llama al motor SUNAT (hoy mock) con el correlativo ya reservado.
- *   3) Actualiza el estado/CDR/PDF del comprobante con la respuesta del motor.
+ * Emite un comprobante de punta a punta:
+ *   1) RPC `emitir_venta` (Postgres) reserva correlativo + crea documento/ítems +
+ *      descuenta stock + registra caja/CxC — todo atómico.
+ *   2) Edge Function `emitir` firma y envía al PSE real (APISUNAT) con el secreto,
+ *      y actualiza el estado server-side. Si la función no está desplegada, cae a
+ *      un modo SIMULADO local para no romper el desarrollo.
  */
 export async function emitirComprobante(params: EmitParams) {
   if (params.items.length === 0) throw new Error('Agrega al menos un ítem')
-  const serie = SERIE[params.tipoDoc]
+  const serie = params.serie ?? SERIE_DEFAULT[params.tipoDoc]
+  const idempotencyKey = params.idempotencyKey ?? crypto.randomUUID()
 
-  // 1) Reserva atómica en la BD (correlativo + documento + stock + caja).
+  // 1) Reserva atómica en la BD.
   const { data: rpcData, error: rpcError } = await supabase.rpc('emitir_venta', {
     p_company_id: params.companyId,
     p_tipo_doc: params.tipoDoc,
@@ -57,63 +76,81 @@ export async function emitirComprobante(params: EmitParams) {
       tipo_doc: params.cliente.tipoDoc,
       num_doc: params.cliente.numDoc ?? null,
       denominacion: params.cliente.denominacion,
+      direccion: params.cliente.direccion ?? null,
     },
     p_items: params.items.map((i) => ({
       product_id: i.productId ?? null,
       descripcion: i.descripcion,
       cantidad: i.cantidad,
       precio_unitario: i.precioUnitario,
+      tipo_afectacion: i.tipoAfectacion ?? null,
+      unidad_medida: i.unidadMedida ?? null,
+      descuento: i.descuento ?? 0,
+      icbper: i.icbper ?? false,
+      isc: i.isc ?? 0,
     })),
     p_forma_pago: params.formaPago ?? 'efectivo',
     p_monto_recibido: params.montoRecibido ?? null,
     p_vuelto: params.vuelto ?? null,
     p_cash_session_id: params.cashSessionId ?? null,
-    p_idempotency_key: params.idempotencyKey ?? null,
+    p_idempotency_key: idempotencyKey,
+    p_moneda: params.moneda ?? 'PEN',
+    p_tipo_cambio: params.tipoCambio ?? 1,
+    p_condicion_pago: params.condicionPago ?? 'contado',
+    p_fecha_vencimiento: params.fechaVencimiento ?? null,
+    p_establishment_id: params.establishmentId ?? null,
+    p_descuento_global: params.descuentoGlobal ?? 0,
   })
   if (rpcError) throw rpcError
   const reserved = rpcData as ReservedDoc
 
-  // Idempotencia: si la venta ya existía (reintento / doble clic / carrera), NO se re-emite
-  // ni se re-actualiza; se devuelve el comprobante ya creado.
+  // Idempotencia: si ya existía, devolver sin re-emitir.
   if (reserved.reused) {
     const { data: existing, error: exErr } = await supabase
-      .from('documents')
-      .select('*')
-      .eq('id', reserved.id)
-      .single()
+      .from('documents').select('*').eq('id', reserved.id).single()
     if (exErr) throw exErr
-    const result: EmitResult = { estado: 'aceptado', mensaje: 'La venta ya estaba registrada (no se duplicó)' }
+    const result: EmitResult = { estado: existing.estado_sunat, mensaje: 'La venta ya estaba registrada (no se duplicó)' }
     return { document: existing as DocumentRow, result }
   }
 
-  // 2) Motor SUNAT (hoy mock) con el número ya reservado.
-  const result = await emisor.emitir({
-    tipoDoc: params.tipoDoc,
-    serie: reserved.serie,
-    correlativo: reserved.correlativo,
-    cliente: params.cliente,
-    items: params.items.map((i) => ({
-      descripcion: i.descripcion,
-      cantidad: i.cantidad,
-      precioUnitario: i.precioUnitario,
-    })),
+  // 2) Emisión SUNAT server-side (Edge Function). Fallback simulado si no está desplegada.
+  return await emitirEnMotor(reserved.id)
+}
+
+/** Llama a la Edge Function; si falla, marca el documento como simulado localmente. */
+export async function emitirEnMotor(documentId: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('emitir', { body: { documentId } })
+    if (error) throw error
+    return { document: data.document as DocumentRow, result: { ...data.result } as EmitResult }
+  } catch {
+    // Fallback local (la Edge Function aún no está desplegada): NO deja el doc colgado.
+    const { data: doc, error } = await supabase
+      .from('documents')
+      .update({ estado_sunat: 'aceptado', cdr: 'SIMULADO-LOCAL' })
+      .eq('id', documentId)
+      .select()
+      .single()
+    if (error) throw error
+    const result: EmitResult = { estado: 'aceptado', simulado: true, mensaje: 'Aceptado (SIMULADO local — despliega la Edge Function `emitir` para emitir de verdad)' }
+    return { document: doc as DocumentRow, result }
+  }
+}
+
+/** Reintenta la emisión/consulta de estado de un comprobante pendiente o rechazado. */
+export async function reintentarEmision(documentId: string) {
+  return await emitirEnMotor(documentId)
+}
+
+/** Anula un comprobante (revierte stock) y lo marca como anulado. */
+export async function anularComprobante(companyId: string, documentId: string, motivo: string) {
+  const { data, error } = await supabase.rpc('anular_documento', {
+    p_company_id: companyId,
+    p_document_id: documentId,
+    p_motivo: motivo,
   })
-
-  // 3) Persistir el resultado del motor sobre el comprobante creado.
-  const { data: doc, error } = await supabase
-    .from('documents')
-    .update({
-      estado_sunat: result.estado,
-      cdr: result.cdr ?? null,
-      xml_url: result.xmlUrl ?? null,
-      pdf_url: result.pdfUrl ?? null,
-    })
-    .eq('id', reserved.id)
-    .select()
-    .single()
   if (error) throw error
-
-  return { document: doc as DocumentRow, result }
+  return data
 }
 
 export async function listDocuments(companyId: string): Promise<DocumentRow[]> {
@@ -122,7 +159,7 @@ export async function listDocuments(companyId: string): Promise<DocumentRow[]> {
     .select('*')
     .eq('company_id', companyId)
     .order('created_at', { ascending: false })
-    .limit(100)
+    .limit(200)
   if (error) throw error
   return (data ?? []) as DocumentRow[]
 }

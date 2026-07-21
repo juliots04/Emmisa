@@ -23,10 +23,14 @@ export interface EmitInput {
 }
 
 export interface EmitResult {
-  estado: 'aceptado' | 'rechazado' | 'pendiente'
+  estado: 'aceptado' | 'rechazado' | 'pendiente' | 'anulado'
   cdr?: string
   xmlUrl?: string
   pdfUrl?: string
+  hash?: string
+  ticket?: string
+  /** true cuando se emitió en modo simulado (sin credenciales / función sin desplegar). */
+  simulado?: boolean
   mensaje?: string
 }
 

@@ -49,7 +49,7 @@ import { computed, onMounted } from 'vue'
 import { useQuasar } from 'quasar'
 
 const $q = useQuasar()
-const STORAGE_KEY = 'konversa-theme'
+const STORAGE_KEY = 'emmisa-theme'
 
 const isDark = computed(() => $q.dark.isActive)
 

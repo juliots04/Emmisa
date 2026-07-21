@@ -4,9 +4,9 @@
       <q-page class="flex flex-center q-pa-md">
         <q-card style="width: 380px" class="q-pa-lg">
           <q-card-section class="text-center q-pb-md">
-            <div class="k-logo q-mx-auto q-mb-md">K</div>
+            <img class="k-logo q-mx-auto q-mb-md" src="/brand/badge.svg" alt="Emmisa" />
             <div class="text-h5 text-weight-bold">Verifica tu correo</div>
-            <div class="text-caption text-grey q-mt-xs">
+            <div class="text-caption text-muted q-mt-xs">
               Ingresa el código que enviamos a
               <div class="text-weight-medium q-mt-xs">{{ email || 'tu correo' }}</div>
             </div>

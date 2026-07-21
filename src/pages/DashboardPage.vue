@@ -6,7 +6,7 @@
       <div v-for="s in stats" :key="s.label" class="col-12 col-sm-4">
         <q-card>
           <q-card-section>
-            <div class="text-caption text-grey">{{ s.label }}</div>
+            <div class="text-caption text-muted">{{ s.label }}</div>
             <div class="text-h4">{{ s.value }}</div>
           </q-card-section>
         </q-card>

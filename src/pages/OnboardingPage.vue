@@ -4,9 +4,9 @@
       <q-page class="flex flex-center q-pa-md">
         <div class="k-onboarding column items-center">
           <div class="text-center q-mb-lg">
-            <div class="k-logo q-mx-auto q-mb-md">K</div>
+            <img class="k-logo q-mx-auto q-mb-md" src="/brand/badge.svg" alt="Emmisa" />
             <div class="text-h4 text-weight-bold">Crea tu negocio</div>
-            <div class="text-caption text-grey q-mt-xs">
+            <div class="text-caption text-muted q-mt-xs">
               Configura tu empresa para empezar a facturar
             </div>
           </div>
@@ -79,19 +79,19 @@
               <q-step :name="3" title="Confirmar" icon="check_circle">
                 <div class="k-review">
                   <div class="k-review__row">
-                    <span class="text-grey">RUC</span><span>{{ ruc || '—' }}</span>
+                    <span class="text-muted">RUC</span><span>{{ ruc || '—' }}</span>
                   </div>
                   <div class="k-review__row">
-                    <span class="text-grey">Razón social</span><span>{{ razonSocial || '—' }}</span>
+                    <span class="text-muted">Razón social</span><span>{{ razonSocial || '—' }}</span>
                   </div>
                   <div class="k-review__row">
-                    <span class="text-grey">Régimen</span><span>{{ regimen }}</span>
+                    <span class="text-muted">Régimen</span><span>{{ regimen }}</span>
                   </div>
                   <div class="k-review__row">
-                    <span class="text-grey">Dirección</span><span>{{ direccion || '—' }}</span>
+                    <span class="text-muted">Dirección</span><span>{{ direccion || '—' }}</span>
                   </div>
                   <div class="k-review__row">
-                    <span class="text-grey">Ubigeo</span><span>{{ ubigeo || '—' }}</span>
+                    <span class="text-muted">Ubigeo</span><span>{{ ubigeo || '—' }}</span>
                   </div>
                 </div>
               </q-step>

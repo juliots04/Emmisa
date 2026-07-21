@@ -55,7 +55,7 @@ export interface DocumentRow {
   id: string
   company_id: string
   customer_id: string | null
-  tipo_doc: TipoDoc
+  tipo_doc: string // 01 factura, 03 boleta, 07 NC, 08 ND
   serie: string
   correlativo: number
   moneda: string
@@ -66,10 +66,33 @@ export interface DocumentRow {
   cdr: string | null
   pdf_url: string | null
   created_at: string
-  // Añadidos por la venta transaccional (migración 0009). Opcionales por retrocompat.
+  // Venta transaccional (0009)
   user_id?: string | null
   cash_session_id?: string | null
   forma_pago?: string | null
   monto_recibido?: number | null
   vuelto?: number | null
+  // Cumplimiento SUNAT ampliado (0011+)
+  establishment_id?: string | null
+  tipo_cambio?: number
+  total_exonerado?: number
+  total_inafecto?: number
+  total_gratuito?: number
+  fecha_emision?: string
+  fecha_vencimiento?: string | null
+  hash?: string | null
+  codigo_qr?: string | null
+  xml_url?: string | null
+  sunat_ticket?: string | null
+  sunat_error?: string | null
+  receptor_tipo_doc?: string | null
+  receptor_num_doc?: string | null
+  receptor_denominacion?: string | null
+  receptor_direccion?: string | null
+  condicion_pago?: string
+  estado_pago?: 'pagado' | 'pendiente' | 'parcial'
+  saldo?: number
+  ref_document_id?: string | null
+  motivo_codigo?: string | null
+  motivo_desc?: string | null
 }

@@ -1,0 +1,10 @@
+<!-- Emmisa · símbolo en BLANCO (para fondo oscuro / de color / una tinta) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Emmisa">
+  <g transform="rotate(-11 32 32)" fill="#ffffff">
+    <polygon points="9,26 20.5,16 20.5,38 9,48" />
+    <polygon points="20.5,16 32,26 32,48 20.5,38" fill="#dfe3ff" />
+    <polygon points="32,26 43.5,16 43.5,38 32,48" />
+    <polygon points="43.5,16 55,26 55,48 43.5,38" fill="#dfe3ff" />
+    <path d="M20.5 16.5V37.5M43.5 16.5V37.5" fill="none" stroke="#000000" stroke-opacity=".10" stroke-width="1" />
+  </g>
+</svg>

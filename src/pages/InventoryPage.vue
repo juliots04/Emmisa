@@ -10,7 +10,7 @@
         align="left"
         active-color="primary"
         indicator-color="primary"
-        class="text-grey"
+        class="text-muted"
       >
         <q-tab name="stock" label="Stock" />
         <q-tab name="movimientos" label="Movimientos" />

@@ -8,11 +8,16 @@ export const useCompanyStore = defineStore('company', () => {
   const current = ref<Company | null>(null)
   const loaded = ref(false)
 
+  const STORAGE_KEY = 'konversa.current_company'
+
   async function load() {
     const { data, error } = await supabase.from('companies').select('*').order('created_at')
     if (error) throw error
     companies.value = (data ?? []) as Company[]
-    if (!current.value && companies.value.length > 0) current.value = companies.value[0]
+    if (!current.value && companies.value.length > 0) {
+      const savedId = localStorage.getItem(STORAGE_KEY)
+      current.value = companies.value.find((c) => c.id === savedId) ?? companies.value[0]
+    }
     loaded.value = true
   }
 
@@ -56,12 +61,14 @@ export const useCompanyStore = defineStore('company', () => {
 
   function setCurrent(company: Company) {
     current.value = company
+    localStorage.setItem(STORAGE_KEY, company.id)
   }
 
   function reset() {
     companies.value = []
     current.value = null
     loaded.value = false
+    localStorage.removeItem(STORAGE_KEY)
   }
 
   return { companies, current, loaded, load, create, setCurrent, reset }

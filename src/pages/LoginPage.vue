@@ -10,11 +10,11 @@
         <div class="k-login-side col column flex-center">
           <div class="k-login-inner">
             <div class="lt-md q-mb-lg">
-              <div class="k-logo">K</div>
+              <img class="k-logo" src="/brand/badge.svg" alt="Emmisa" />
             </div>
 
             <div class="text-h4 text-weight-bold">Inicia sesión</div>
-            <div class="text-body2 text-grey q-mb-xl">Bienvenido de nuevo a Konversa</div>
+            <div class="text-body2 text-muted q-mb-xl">Bienvenido de nuevo a Emmisa</div>
 
             <q-form @submit.prevent="submit">
               <q-input
@@ -46,7 +46,7 @@
 
             <div class="row items-center q-my-lg">
               <q-separator class="col" />
-              <span class="q-mx-md text-caption text-grey">o</span>
+              <span class="q-mx-md text-caption text-muted">o</span>
               <q-separator class="col" />
             </div>
 
@@ -61,7 +61,7 @@
               @click="loginGoogle"
             />
 
-            <div class="text-center q-mt-lg text-caption text-grey">
+            <div class="text-center q-mt-lg text-caption text-muted">
               ¿No tienes cuenta?
               <q-btn flat dense no-caps color="primary" label="Regístrate" :to="{ name: 'register' }" />
             </div>

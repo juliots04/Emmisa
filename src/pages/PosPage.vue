@@ -2,7 +2,9 @@
   <q-page class="q-pa-md">
     <!-- ---------- Encabezado ---------- -->
     <div class="row items-center q-mb-md q-gutter-x-sm">
-      <div class="text-h5">Venta rápida</div>
+      <div class="text-h5">
+        Venta rápida
+      </div>
       <q-chip
         :color="caja ? 'positive' : 'grey-7'"
         text-color="white"
@@ -16,7 +18,11 @@
         </q-tooltip>
       </q-chip>
       <q-space />
-      <q-badge v-if="cart.length" color="primary" :label="`${itemCount} ítem(s)`" />
+      <q-badge
+        v-if="cart.length"
+        color="primary"
+        :label="`${itemCount} ítem(s)`"
+      />
       <q-btn
         v-if="cart.length"
         flat
@@ -34,44 +40,87 @@
       <!-- ============ Izquierda: catálogo ============ -->
       <div class="col-12 col-md-7">
         <q-card>
-          <q-card-section class="q-gutter-sm">
+          <q-card-section class="q-gutter-md">
             <q-input
               ref="searchInput"
               v-model="search"
               outlined
-              dense
               clearable
               autofocus
               placeholder="Buscar por nombre, SKU o código de barras…  (Enter para agregar)"
               @keyup.enter="addByCode"
             >
-              <template #prepend><q-icon name="qr_code_scanner" /></template>
+              <template #prepend>
+                <q-icon name="qr_code_scanner" />
+              </template>
               <template #append>
-                <q-badge v-if="search" color="primary" outline :label="`${filtered.length}`" />
+                <q-badge
+                  v-if="search"
+                  color="primary"
+                  outline
+                  :label="`${filtered.length}`"
+                />
               </template>
             </q-input>
 
-            <div v-if="loading" class="k-catalog-state">
-              <q-spinner size="28px" color="primary" />
+            <div
+              v-if="loading"
+              class="k-catalog-state"
+            >
+              <q-spinner
+                size="28px"
+                color="primary"
+              />
             </div>
 
             <!-- Sin productos en la empresa -->
-            <div v-else-if="products.length === 0" class="k-catalog-state">
-              <q-icon name="inventory_2" size="42px" class="k-state-icon" />
-              <div class="text-subtitle1 q-mt-sm">Aún no tienes productos</div>
-              <div class="text-caption text-grey q-mb-md">Agrega productos primero para poder venderlos.</div>
-              <q-btn color="primary" icon="add" label="Ir a Productos" :to="{ name: 'products' }" />
+            <div
+              v-else-if="products.length === 0"
+              class="k-catalog-state"
+            >
+              <q-icon
+                name="inventory_2"
+                size="42px"
+                class="k-state-icon"
+              />
+              <div class="text-subtitle1 q-mt-sm">
+                Aún no tienes productos
+              </div>
+              <div class="text-caption text-muted q-mb-md">
+                Agrega productos primero para poder venderlos.
+              </div>
+              <q-btn
+                color="primary"
+                unelevated
+                icon="add"
+                label="Ir a Productos"
+                :to="{ name: 'products' }"
+              />
             </div>
 
             <!-- Sin coincidencias de búsqueda -->
-            <div v-else-if="filtered.length === 0" class="k-catalog-state">
-              <q-icon name="search_off" size="42px" class="k-state-icon" />
-              <div class="text-subtitle1 q-mt-sm">Sin resultados</div>
-              <div class="text-caption text-grey">Prueba con otro término o código.</div>
+            <div
+              v-else-if="filtered.length === 0"
+              class="k-catalog-state"
+            >
+              <q-icon
+                name="search_off"
+                size="42px"
+                class="k-state-icon"
+              />
+              <div class="text-subtitle1 q-mt-sm">
+                Sin resultados
+              </div>
+              <div class="text-caption text-muted">
+                Prueba con otro término o código.
+              </div>
             </div>
 
             <!-- Grilla de productos -->
-            <div v-else class="k-grid">
+            <div
+              v-else
+              class="k-grid"
+            >
               <button
                 v-for="p in filtered"
                 :key="p.id"
@@ -81,18 +130,26 @@
                 :disabled="isAgotado(p)"
                 @click="addToCart(p)"
               >
-                <div class="k-tile-top">
-                  <span class="k-tile-name">{{ p.nombre }}</span>
-                  <q-badge
+                <div class="k-tile-head">
+                  <span
+                    class="k-tile-avatar"
+                    :style="avatarStyle(p)"
+                  >{{ initial(p) }}</span>
+                  <span
                     v-if="stockLabel(p) !== null"
-                    :color="stockColor(p)"
-                    :label="stockLabel(p) ?? ''"
                     class="k-tile-stock"
-                  />
+                    :class="`k-stock--${stockTone(p)}`"
+                  >
+                    <i class="k-dot" />{{ stockLabel(p) }}
+                  </span>
                 </div>
-                <div class="k-tile-bottom">
+                <span class="k-tile-name">{{ p.nombre }}</span>
+                <div class="k-tile-foot">
                   <span class="k-tile-price">S/ {{ money(p.precio) }}</span>
-                  <span v-if="p.sku" class="k-tile-sku">{{ p.sku }}</span>
+                  <span
+                    v-if="p.sku"
+                    class="k-tile-sku"
+                  >{{ p.sku }}</span>
                 </div>
               </button>
             </div>
@@ -103,17 +160,20 @@
       <!-- ============ Derecha: carrito y cobro ============ -->
       <div class="col-12 col-md-5">
         <q-card class="k-cart-col">
-          <q-card-section>
-            <!-- Tipo de comprobante -->
-            <q-btn-toggle
-              v-model="tipoDoc"
-              class="full-width q-mb-md"
-              no-caps
-              spread
-              unelevated
-              toggle-color="primary"
-              :options="tipoOptions"
-            />
+          <q-card-section class="k-cart-pad">
+            <!-- Tipo de comprobante · control segmentado -->
+            <div class="k-seg q-mb-md">
+              <button
+                v-for="o in tipoOptions"
+                :key="o.value"
+                type="button"
+                class="k-seg-btn"
+                :class="{ 'k-seg-btn--on': tipoDoc === o.value }"
+                @click="tipoDoc = o.value"
+              >
+                {{ o.label }}
+              </button>
+            </div>
 
             <!-- Cliente -->
             <q-select
@@ -123,15 +183,16 @@
               use-input
               clearable
               outlined
-              dense
               hide-dropdown-icon
               input-debounce="200"
-              label="Buscar cliente registrado"
+              placeholder="Buscar cliente registrado"
               class="q-mb-sm"
               @filter="onCustomerFilter"
               @update:model-value="pickCustomer"
             >
-              <template #prepend><q-icon name="person_search" /></template>
+              <template #prepend>
+                <q-icon name="person_search" />
+              </template>
               <template #option="scope">
                 <q-item v-bind="scope.itemProps">
                   <q-item-section>
@@ -143,23 +204,35 @@
                 </q-item>
               </template>
               <template #no-option>
-                <q-item><q-item-section class="text-grey">Sin coincidencias</q-item-section></q-item>
+                <q-item>
+                  <q-item-section class="text-muted">
+                    Sin coincidencias
+                  </q-item-section>
+                </q-item>
               </template>
             </q-select>
 
             <div class="row q-col-gutter-sm q-mb-sm">
               <div class="col">
-                <q-input v-model="clienteNombre" outlined dense label="Nombre / Razón social" @update:model-value="onManualCliente" />
+                <q-input
+                  v-model="clienteNombre"
+                  outlined
+                  label="Nombre / Razón social"
+                  @update:model-value="onManualCliente"
+                />
               </div>
-              <div class="col-auto" style="width: 150px">
+              <div
+                class="col-auto"
+                style="width: 150px"
+              >
                 <q-input
                   v-model="clienteDoc"
                   outlined
-                  dense
                   :label="tipoDoc === '01' ? 'RUC *' : 'DNI (opcional)'"
                   :mask="tipoDoc === '01' ? '###########' : '########'"
                   :rules="docRules"
                   lazy-rules
+                  hide-bottom-space
                   @update:model-value="onManualCliente"
                 />
               </div>
@@ -168,23 +241,55 @@
             <q-separator class="q-my-md" />
 
             <!-- Carrito vacío -->
-            <div v-if="cart.length === 0" class="k-cart-empty">
-              <q-icon name="shopping_cart" size="34px" class="k-state-icon" />
-              <div class="text-caption text-grey q-mt-xs">Toca un producto o escanea un código.</div>
+            <div
+              v-if="cart.length === 0"
+              class="k-cart-empty"
+            >
+              <q-icon
+                name="shopping_cart"
+                size="34px"
+                class="k-state-icon"
+              />
+              <div class="text-caption text-muted q-mt-xs">
+                Toca un producto o escanea un código.
+              </div>
             </div>
 
             <!-- Ítems del carrito -->
-            <div v-else class="k-cart-list">
-              <div v-for="item in cart" :key="item.productId" class="k-cart-row">
+            <div
+              v-else
+              class="k-cart-list"
+            >
+              <div
+                v-for="item in cart"
+                :key="item.productId"
+                class="k-cart-row"
+              >
                 <div class="k-cart-info">
-                  <div class="k-cart-name">{{ item.nombre }}</div>
-                  <div class="k-cart-unit">S/ {{ money(item.precio) }} c/u</div>
+                  <div class="k-cart-name">
+                    {{ item.nombre }}
+                  </div>
+                  <div class="k-cart-unit">
+                    S/ {{ money(item.precio) }} c/u
+                  </div>
                 </div>
-                <div class="k-cart-qty">
-                  <q-btn round dense flat icon="remove" size="sm" @click="decrement(item)" />
+                <div class="k-stepper">
+                  <q-btn
+                    round
+                    dense
+                    flat
+                    icon="remove"
+                    size="sm"
+                    @click="decrement(item)"
+                  />
                   <span class="k-cart-count">
                     {{ item.cantidad }}
-                    <q-popup-edit v-slot="scope" v-model.number="item.cantidad" :cover="false" auto-save>
+                    <q-popup-edit
+                      v-slot="scope"
+                      v-model.number="item.cantidad"
+                      :cover="false"
+                      auto-save
+                    >
                       <q-input
                         v-model.number="scope.value"
                         type="number"
@@ -198,10 +303,27 @@
                       />
                     </q-popup-edit>
                   </span>
-                  <q-btn round dense flat icon="add" size="sm" @click="increment(item)" />
+                  <q-btn
+                    round
+                    dense
+                    flat
+                    icon="add"
+                    size="sm"
+                    @click="increment(item)"
+                  />
                 </div>
-                <div class="k-cart-line">S/ {{ money(item.precio * item.cantidad) }}</div>
-                <q-btn round dense flat size="sm" icon="close" color="negative" @click="removeItem(item)" />
+                <div class="k-cart-line">
+                  S/ {{ money(item.precio * item.cantidad) }}
+                </div>
+                <q-btn
+                  round
+                  dense
+                  flat
+                  size="sm"
+                  icon="close"
+                  color="negative"
+                  @click="removeItem(item)"
+                />
               </div>
             </div>
 
@@ -210,7 +332,9 @@
 
               <!-- Descuento -->
               <div class="row items-center q-col-gutter-sm q-mb-sm">
-                <div class="col-auto text-body2 text-grey">Descuento</div>
+                <div class="col-auto text-body2 text-muted">
+                  Descuento
+                </div>
                 <div class="col">
                   <q-input
                     v-model.number="descuentoValor"
@@ -223,18 +347,18 @@
                     hide-bottom-space
                   >
                     <template #append>
-                      <q-btn-toggle
-                        v-model="descuentoModo"
-                        flat
-                        dense
-                        no-caps
-                        size="sm"
-                        toggle-color="primary"
-                        :options="[
-                          { label: 'S/', value: 'monto' },
-                          { label: '%', value: 'pct' },
-                        ]"
-                      />
+                      <div class="k-seg k-seg--mini">
+                        <button
+                          v-for="m in descuentoModos"
+                          :key="m.value"
+                          type="button"
+                          class="k-seg-btn"
+                          :class="{ 'k-seg-btn--on': descuentoModo === m.value }"
+                          @click="descuentoModo = m.value"
+                        >
+                          {{ m.label }}
+                        </button>
+                      </div>
                     </template>
                   </q-input>
                 </div>
@@ -242,62 +366,75 @@
 
               <!-- Totales -->
               <div class="k-totals">
-                <div class="row justify-between text-body2 text-grey">
+                <div class="row justify-between text-body2 text-muted">
                   <span>Subtotal</span><span>S/ {{ money(subtotalBruto.total) }}</span>
                 </div>
-                <div v-if="descuentoMonto > 0" class="row justify-between text-body2 text-negative">
+                <div
+                  v-if="descuentoMonto > 0"
+                  class="row justify-between text-body2 text-negative"
+                >
                   <span>Descuento</span><span>− S/ {{ money(descuentoMonto) }}</span>
                 </div>
-                <div class="row justify-between text-body2 text-grey">
+                <div class="row justify-between text-body2 text-muted">
                   <span>Op. gravada</span><span>S/ {{ money(totals.gravado) }}</span>
                 </div>
-                <div class="row justify-between text-body2 text-grey">
+                <div class="row justify-between text-body2 text-muted">
                   <span>IGV (18%)</span><span>S/ {{ money(totals.igv) }}</span>
                 </div>
                 <q-separator class="q-my-sm" />
-                <div class="row justify-between text-h6">
-                  <span>Total</span><span>S/ {{ money(totals.total) }}</span>
+                <div class="row justify-between items-baseline k-total-row">
+                  <span>Total</span><span class="k-total-amount">S/ {{ money(totals.total) }}</span>
                 </div>
               </div>
 
-              <!-- Forma de pago -->
-              <div class="text-caption text-grey q-mt-md q-mb-xs">FORMA DE PAGO</div>
-              <q-btn-toggle
-                v-model="formaPago"
-                class="full-width"
-                no-caps
-                spread
-                unelevated
-                toggle-color="primary"
-                :options="pagoOptions"
-              />
+              <!-- Forma de pago · logos de marca -->
+              <div class="k-section-label">
+                Forma de pago
+              </div>
+              <div class="k-pay-grid">
+                <button
+                  v-for="m in metodosPago"
+                  :key="m.value"
+                  type="button"
+                  class="k-pay"
+                  :class="{ 'k-pay--on': formaPago === m.value }"
+                  @click="formaPago = m.value"
+                >
+                  <img
+                    :src="m.logo"
+                    :alt="m.label"
+                    class="k-pay-logo"
+                    width="30"
+                    height="30"
+                  >
+                  <span class="k-pay-label">{{ m.label }}</span>
+                </button>
+              </div>
 
               <!-- Efectivo recibido + vuelto -->
               <template v-if="formaPago === 'efectivo'">
-                <div class="row q-col-gutter-xs q-mt-sm">
-                  <div v-for="d in denominaciones" :key="d.label" class="col">
-                    <q-btn
-                      class="full-width"
-                      outline
-                      no-caps
-                      dense
-                      size="sm"
-                      color="primary"
-                      :label="d.label"
-                      @click="setEfectivo(d.value)"
-                    />
-                  </div>
+                <div class="k-denoms q-mt-sm">
+                  <button
+                    v-for="d in denominaciones"
+                    :key="d.label"
+                    type="button"
+                    class="k-denom"
+                    @click="setEfectivo(d.value)"
+                  >
+                    {{ d.label }}
+                  </button>
                 </div>
                 <q-input
                   v-model.number="efectivoRecibido"
                   type="number"
                   outlined
-                  dense
                   class="q-mt-sm"
-                  label="Efectivo recibido"
+                  placeholder="Efectivo recibido"
                   min="0"
                 >
-                  <template #prepend><q-icon name="payments" /></template>
+                  <template #prepend>
+                    <q-icon name="payments" />
+                  </template>
                 </q-input>
                 <div
                   v-if="efectivoRecibido !== null && efectivoRecibido > 0"
@@ -310,8 +447,9 @@
               </template>
 
               <q-btn
-                class="full-width q-mt-md"
+                class="full-width q-mt-md k-cobrar"
                 color="primary"
+                unelevated
                 size="lg"
                 icon="sell"
                 :label="`Cobrar  ·  S/ ${money(totals.total)}`"
@@ -319,10 +457,26 @@
                 :disable="cart.length === 0 || !caja"
                 @click="cobrar"
               />
-              <div v-if="!caja" class="row items-center justify-center q-mt-sm text-caption text-warning">
-                <q-icon name="lock" size="14px" class="q-mr-xs" />
+              <div
+                v-if="!caja"
+                class="row items-center justify-center q-mt-sm text-caption text-warning"
+              >
+                <q-icon
+                  name="lock"
+                  size="14px"
+                  class="q-mr-xs"
+                />
                 Abre una caja para poder cobrar.
-                <q-btn flat dense no-caps size="sm" color="primary" label="Ir a Caja" :to="{ name: 'cash' }" class="q-ml-xs" />
+                <q-btn
+                  flat
+                  dense
+                  no-caps
+                  size="sm"
+                  color="primary"
+                  label="Ir a Caja"
+                  :to="{ name: 'cash' }"
+                  class="q-ml-xs"
+                />
               </div>
             </template>
           </q-card-section>
@@ -341,6 +495,7 @@ import { listCustomers } from '@/modules/customers/customers.api'
 import { listStock } from '@/modules/inventory/inventory.api'
 import { getOpenSession, type CashSession } from '@/modules/cash/cash.api'
 import { emitirComprobante } from '@/modules/documents/documents.api'
+import { printTicket } from '@/lib/ticket'
 import { computeTotals, round2 } from '@/modules/sunat'
 import { firstError, ruc, dni, nonNegative, maxVal, positive, required, type Rule } from '@/lib/validation'
 import { notify } from '@/lib/toast'
@@ -356,16 +511,22 @@ type FormaPago = 'efectivo' | 'yape' | 'plin' | 'tarjeta' | 'transferencia'
 
 const company = useCompanyStore()
 
-const tipoOptions = [
+const tipoOptions: { label: string; value: TipoDoc }[] = [
   { label: 'Boleta', value: '03' },
   { label: 'Factura', value: '01' },
 ]
-const pagoOptions = [
-  { label: 'Efectivo', value: 'efectivo', icon: 'payments' },
-  { label: 'Yape', value: 'yape', icon: 'smartphone' },
-  { label: 'Plin', value: 'plin', icon: 'smartphone' },
-  { label: 'Tarjeta', value: 'tarjeta', icon: 'credit_card' },
-  { label: 'Transf.', value: 'transferencia', icon: 'account_balance' },
+// Métodos de pago con logo de marca (en /public/pay). Se usan para el selector
+// y para etiquetar el comprobante/ticket al cobrar.
+const metodosPago: { value: FormaPago; label: string; logo: string }[] = [
+  { value: 'efectivo', label: 'Efectivo', logo: '/pay/efectivo.svg' },
+  { value: 'yape', label: 'Yape', logo: '/pay/yape.svg' },
+  { value: 'plin', label: 'Plin', logo: '/pay/plin.svg' },
+  { value: 'tarjeta', label: 'Tarjeta', logo: '/pay/tarjeta.svg' },
+  { value: 'transferencia', label: 'Transf.', logo: '/pay/transferencia.svg' },
+]
+const descuentoModos: { label: string; value: 'monto' | 'pct' }[] = [
+  { label: 'S/', value: 'monto' },
+  { label: '%', value: 'pct' },
 ]
 const denominaciones = [
   { label: 'Exacto', value: -1 },
@@ -375,6 +536,8 @@ const denominaciones = [
   { label: 'S/100', value: 100 },
   { label: 'S/200', value: 200 },
 ]
+// Paleta suave para el avatar de cada producto (determinística por nombre).
+const avatarPalette = ['#6366f1', '#0ea5e9', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444']
 
 const products = ref<Product[]>([])
 const stockByProduct = ref<Map<string, number>>(new Map())
@@ -430,11 +593,22 @@ function stockLabel(p: Product): string | null {
   if (s === null) return null
   return s <= 0 ? 'Agotado' : `${s} und`
 }
-function stockColor(p: Product): string {
+function stockTone(p: Product): 'ok' | 'low' | 'out' {
   const s = stockOf(p) ?? 0
-  if (s <= 0) return 'negative'
-  if (s <= p.stock_minimo) return 'warning'
-  return 'grey-7'
+  if (s <= 0) return 'out'
+  if (s <= p.stock_minimo) return 'low'
+  return 'ok'
+}
+
+/* ---------------- Avatar del producto ---------------- */
+function initial(p: Product): string {
+  return (p.nombre || '?').trim().charAt(0).toUpperCase()
+}
+function avatarStyle(p: Product): Record<string, string> {
+  let h = 0
+  for (let i = 0; i < p.id.length; i++) h = (h * 31 + p.id.charCodeAt(i)) >>> 0
+  const c = avatarPalette[h % avatarPalette.length]
+  return { background: `color-mix(in srgb, ${c} 16%, transparent)`, color: c }
 }
 
 /* ---------------- Carrito ---------------- */
@@ -614,13 +788,28 @@ async function cobrar() {
       idempotencyKey: ventaKey.value,
     })
 
-    const pagoLabel = pagoOptions.find((o) => o.value === formaPago.value)?.label ?? ''
+    const pagoLabel = metodosPago.find((o) => o.value === formaPago.value)?.label ?? ''
     const vueltoTxt =
       formaPago.value === 'efectivo' && efectivoRecibido.value ? ` · Vuelto S/ ${money(vuelto.value)}` : ''
     notify({
       type: result.estado === 'aceptado' ? 'positive' : 'warning',
       message: result.mensaje ?? 'Comprobante emitido',
       caption: `${document.serie}-${String(document.correlativo).padStart(8, '0')} · ${pagoLabel} · S/ ${money(document.total)}${vueltoTxt}`,
+    })
+
+    // Ticket térmico (best-effort; no bloquea la venta si el popup está bloqueado).
+    printTicket({
+      empresa: {
+        razon_social: company.current.razon_social,
+        ruc: company.current.ruc,
+        direccion: company.current.direccion,
+      },
+      doc: document,
+      cliente: { denominacion: clienteNombre.value.trim() || 'Cliente varios', numDoc: clienteDoc.value || null },
+      lines: emitLines.value.map((l) => ({ descripcion: l.descripcion, cantidad: l.cantidad, precioUnitario: l.precioUnitario })),
+      formaPago: pagoLabel,
+      efectivo: esEfectivo ? efectivoRecibido.value : null,
+      vuelto: esEfectivo && efectivoRecibido.value ? vuelto.value : null,
     })
 
     // Reset para la siguiente venta.
@@ -695,65 +884,81 @@ onMounted(async () => {
   opacity: 0.7;
 }
 
-/* ---------- Grilla de productos ---------- */
+/* ---------- Grilla de productos (borderless · soft-fill) ---------- */
 .k-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
 }
 .k-tile {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 88px;
-  padding: 12px 14px;
-  border: 1px solid var(--k-border);
+  gap: 10px;
+  min-height: 110px;
+  padding: 14px;
+  border: none;
   border-radius: var(--k-radius-sm);
   background: var(--k-surface-2);
   color: var(--k-text);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.05s ease;
+  transition: box-shadow 0.15s ease, transform 0.08s ease, background 0.15s ease;
 }
 .k-tile:hover {
-  border-color: var(--k-border-hover);
+  background: color-mix(in srgb, var(--k-surface-2) 60%, var(--k-surface));
+  box-shadow: 0 0 0 1px var(--k-border-hover), 0 6px 18px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
 }
 .k-tile:active {
   transform: scale(0.98);
+}
+.k-tile:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 70%, transparent);
 }
 .k-tile--out {
   opacity: 0.5;
   cursor: not-allowed;
 }
-.k-tile-top {
+.k-tile-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 6px;
+}
+.k-tile-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
 }
 .k-tile-name {
   font-weight: 600;
   font-size: 13.5px;
-  line-height: 1.25;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.k-tile-stock {
-  flex-shrink: 0;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 10px;
-}
-.k-tile-bottom {
+.k-tile-foot {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 6px;
+  margin-top: auto;
 }
 .k-tile-price {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--k-text);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--q-primary);
 }
 .k-tile-sku {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -763,13 +968,77 @@ onMounted(async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Stock: punto de color + texto (sutil, sin pill pesado) */
+.k-tile-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  color: var(--k-muted);
+  white-space: nowrap;
+}
+.k-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.k-stock--ok { color: var(--k-muted); }
+.k-stock--ok .k-dot { background: var(--q-positive); }
+.k-stock--low { color: var(--q-warning); }
+.k-stock--out { color: var(--q-negative); }
 
 /* ---------- Columna de cobro (sticky en desktop) ---------- */
+.k-cart-pad {
+  padding: 20px;
+}
 @media (min-width: 1024px) {
   .k-cart-col {
     position: sticky;
     top: 12px;
   }
+}
+
+/* ---------- Control segmentado (Boleta/Factura, S//%) ---------- */
+.k-seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: var(--k-radius-sm);
+  background: var(--k-surface-2);
+}
+.k-seg-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--k-muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 7px 12px;
+  border-radius: calc(var(--k-radius-sm) - 3px);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.k-seg-btn:hover {
+  color: var(--k-text);
+}
+.k-seg-btn--on {
+  background: var(--k-surface);
+  color: var(--q-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+/* Variante mini para el sufijo S//% del descuento */
+.k-seg--mini {
+  padding: 2px;
+  gap: 2px;
+}
+.k-seg--mini .k-seg-btn {
+  font-size: 12px;
+  padding: 3px 9px;
+  min-width: 34px;
 }
 
 /* ---------- Carrito ---------- */
@@ -783,12 +1052,14 @@ onMounted(async () => {
 .k-cart-list {
   max-height: 42vh;
   overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
 }
 .k-cart-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--k-border);
 }
 .k-cart-info {
@@ -807,11 +1078,14 @@ onMounted(async () => {
   font-size: 11px;
   color: var(--k-muted);
 }
-.k-cart-qty {
+.k-stepper {
   display: flex;
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  background: var(--k-surface-2);
+  border-radius: 999px;
+  padding: 2px;
 }
 .k-cart-count {
   min-width: 26px;
@@ -819,11 +1093,6 @@ onMounted(async () => {
   font-weight: 600;
   font-size: 13.5px;
   cursor: pointer;
-  border-radius: 6px;
-  padding: 2px 0;
-}
-.k-cart-count:hover {
-  background: var(--k-surface-2);
 }
 .k-cart-line {
   min-width: 68px;
@@ -834,5 +1103,90 @@ onMounted(async () => {
 }
 .k-totals {
   font-variant-numeric: tabular-nums;
+}
+.k-total-row {
+  font-size: 15px;
+  font-weight: 700;
+}
+.k-total-amount {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* ---------- Selección de forma de pago (logos de marca) ---------- */
+.k-section-label {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--k-muted);
+  margin: 16px 0 8px;
+}
+.k-pay-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 8px;
+}
+.k-pay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  border: none;
+  border-radius: var(--k-radius-sm);
+  background: var(--k-surface-2);
+  color: var(--k-muted);
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.k-pay:hover {
+  color: var(--k-text);
+}
+.k-pay--on {
+  background: var(--k-active-bg);
+  color: var(--k-active-text);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 65%, transparent);
+}
+.k-pay-logo {
+  border-radius: 9px;
+  display: block;
+}
+.k-pay-label {
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* ---------- Chips de denominación (borderless) ---------- */
+.k-denoms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.k-denom {
+  border: none;
+  background: var(--k-surface-2);
+  color: var(--k-text);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+}
+.k-denom:hover {
+  box-shadow: 0 0 0 1px var(--k-border-hover);
+  background: color-mix(in srgb, var(--k-surface-2) 60%, var(--q-primary));
+}
+
+/* ---------- Botón cobrar ---------- */
+.k-cobrar {
+  height: 52px;
+  font-size: 16px;
+  border-radius: 14px;
 }
 </style>

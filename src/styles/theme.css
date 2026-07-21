@@ -1,5 +1,5 @@
 /* ============================================================
-   Konversa · Tema minimalista (estilo Google / Linear)
+   Emmisa · Tema minimalista (estilo Google / Linear)
    Tipografía: Hanken Grotesk (texto) + JetBrains Mono (labels)
    Doble modo: claro y oscuro. Quasar alterna .body--dark / .body--light.
    Toda regla usa tokens var(--k-...) definidos por modo más abajo.
@@ -38,7 +38,7 @@
   --k-border: rgba(0, 0, 0, 0.08);
   --k-border-hover: rgba(0, 0, 0, 0.16);
   --k-text: #18181b;
-  --k-muted: #6b7280;
+  --k-muted: #565c66;
   --k-active-bg: rgba(99, 102, 241, 0.1);
   --k-active-text: #4338ca;
   --k-radius: 20px;
@@ -72,11 +72,15 @@ body {
   font-weight: 700;
   letter-spacing: -0.4px;
 }
-.text-caption,
 .q-item__label--header,
-.q-table th {
+.q-table th,
+.k-mono {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
   letter-spacing: 0.3px;
+}
+/* Color atenuado que respeta el modo claro/oscuro (usar en vez de text-grey de Quasar). */
+.text-muted {
+  color: var(--k-muted);
 }
 
 /* ---------- Contenedores / tarjetas ---------- */
@@ -107,6 +111,10 @@ body {
 .q-btn.q-btn--fab {
   border-radius: 50%;
 }
+/* Botones planos en toda la app (la sombra Material de Quasar vive en :before). */
+.q-btn:before {
+  box-shadow: none !important;
+}
 
 /* ---------- Inputs: minimalista SIN bordes (relleno suave tipo tarjeta) ---------- */
 .q-field--outlined .q-field__control {
@@ -119,17 +127,16 @@ body {
 .q-field--outlined .q-field__control:after {
   border: none;
 }
-/* Foco: sin borde, solo un halo suave en indigo. */
+/* Foco: sin borde, anillo indigo SÓLIDO y visible (accesible, WCAG 2.4.7). */
 .q-field--outlined.q-field--focused .q-field__control {
-  box-shadow: 0 0 0 2px var(--k-active-bg);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-primary) 70%, transparent);
 }
 /* Error: halo rojo (sin borde) para que la validación siga siendo visible. */
 .q-field--outlined.q-field--error .q-field__control {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--q-negative) 30%, transparent);
 }
-/* Los campos NO se estiran a la altura de su fila: si un campo reserva espacio
-   para su mensaje de error/hint, no agranda ni desalinea a sus vecinos.
-   (Causa de las "muescas" entre campos rellenos en una misma fila.) */
+/* Los campos NO se estiran a la altura de su fila (evita muescas por alturas
+   distintas cuando un campo reserva espacio para su mensaje de error). */
 .q-field--outlined {
   align-self: flex-start;
 }
@@ -163,7 +170,16 @@ body {
   font-size: 11px;
 }
 
-/* ---------- Tablas ---------- */
+/* ---------- Tablas: mismo lenguaje que las tarjetas (redondeadas + borde sutil) ---------- */
+/* Quasar propaga el border-radius del contenedor a sus secciones (> div:first/last-child),
+   asi que se redondea sin overflow:hidden (no rompe el scroll horizontal). */
+.q-table__container {
+  background: var(--k-surface);
+  border-radius: var(--k-radius);
+}
+.q-table--bordered {
+  border-color: var(--k-border);
+}
 .q-table__card,
 .q-table {
   background: transparent;
@@ -204,5 +220,17 @@ body {
   font-family: 'Hanken Grotesk', sans-serif;
   font-weight: 800;
   font-size: 26px;
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  box-shadow: none;
+}
+
+/* ---------- Accesibilidad: menos movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

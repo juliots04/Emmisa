@@ -1,4 +1,4 @@
-# Konversa · App (facturador)
+# Emmisa · App (facturador)
 
 Frontend + capa de datos del facturador. **Vue 3 + Vite + TypeScript + Quasar + Pinia + Supabase.**
 

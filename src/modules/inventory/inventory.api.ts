@@ -139,54 +139,37 @@ export interface NewMovement {
 }
 
 /**
- * Ajusta la fila de stock del par (producto, almacén) según el tipo de movimiento:
- * ingreso suma, salida resta y ajuste fija el valor absoluto. Usa upsert por el
- * unique(product_id, warehouse_id).
+ * Registra un movimiento de inventario de forma ATÓMICA vía RPC de Postgres
+ * (crea la fila de stock si falta, actualiza cantidad y registra el kardex en
+ * una sola transacción). Evita el race condition del read-modify-write anterior.
+ *   ingreso → suma · salida → resta · ajuste → fija el valor absoluto.
+ * Devuelve el stock resultante del par (producto, almacén).
  */
-async function applyStockDelta(input: NewMovement): Promise<void> {
-  const { data: existing, error: readErr } = await supabase
-    .from('stock')
-    .select('cantidad')
-    .eq('product_id', input.productId)
-    .eq('warehouse_id', input.warehouseId)
-    .maybeSingle()
-  if (readErr) throw readErr
-
-  const actual = existing ? Number((existing as { cantidad: number }).cantidad) : 0
-  let cantidad: number
-  if (input.tipo === 'ingreso') cantidad = actual + input.cantidad
-  else if (input.tipo === 'salida') cantidad = actual - input.cantidad
-  else cantidad = input.cantidad // ajuste: valor absoluto
-
-  const { error: upErr } = await supabase.from('stock').upsert(
-    { product_id: input.productId, warehouse_id: input.warehouseId, cantidad },
-    { onConflict: 'product_id,warehouse_id' },
-  )
-  if (upErr) throw upErr
-}
-
 export async function registerMovement(
   companyId: string,
   input: NewMovement,
-): Promise<InventoryMovement> {
-  const { data, error } = await supabase
-    .from('inventory_movements')
-    .insert({
-      company_id: companyId,
-      product_id: input.productId,
-      warehouse_id: input.warehouseId,
-      tipo: input.tipo,
-      cantidad: input.cantidad,
-      motivo: input.motivo ?? null,
+): Promise<{ cantidad: number }> {
+  if (input.tipo === 'ajuste') {
+    const { data, error } = await supabase.rpc('fijar_stock', {
+      p_company_id: companyId,
+      p_product_id: input.productId,
+      p_warehouse_id: input.warehouseId,
+      p_cantidad: input.cantidad,
+      p_motivo: input.motivo ?? null,
     })
-    .select()
-    .single()
+    if (error) throw error
+    return { cantidad: Number(data) }
+  }
+  const { data, error } = await supabase.rpc('ajustar_stock', {
+    p_company_id: companyId,
+    p_product_id: input.productId,
+    p_warehouse_id: input.warehouseId,
+    p_delta: input.tipo === 'ingreso' ? input.cantidad : -input.cantidad,
+    p_tipo: input.tipo,
+    p_motivo: input.motivo ?? null,
+  })
   if (error) throw error
-
-  // Además, refleja el movimiento en la fila de stock.
-  await applyStockDelta(input)
-
-  return data as InventoryMovement
+  return { cantidad: Number(data) }
 }
 
 export async function listMovements(companyId: string): Promise<InventoryMovement[]> {

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { emisor } from '@/modules/sunat'
+import { emitirEnMotor } from '@/modules/documents/documents.api'
 
 /**
  * Fila de comprobante tal como vive en la tabla `documents`.
@@ -41,16 +41,6 @@ export const MOTIVOS_NC: MotivoNC[] = [
   { codigo: '07', descripcion: 'Devolución por ítem' },
 ]
 
-interface CustomerLite {
-  tipo_doc: string
-  num_doc: string | null
-  denominacion: string
-}
-
-function numeroDoc(serie: string, correlativo: number): string {
-  return `${serie}-${String(correlativo).padStart(8, '0')}`
-}
-
 /**
  * Comprobantes aceptados por SUNAT que pueden ser rectificados por una NC:
  * facturas ('01') y boletas ('03') en estado 'aceptado'.
@@ -82,109 +72,57 @@ export async function listCreditNotes(companyId: string): Promise<CreditNoteRow[
 }
 
 /**
- * Emite una nota de crédito (tipo_doc '07') que rectifica un comprobante aceptado.
+ * Emite una nota de crédito ('07') o débito ('08') que rectifica un comprobante.
  *
- * Flujo: lee el documento original -> arma serie/correlativo de la NC ->
- * llama al motor SUNAT (mock) -> guarda la NC en `documents` con
- * `ref_document_id` apuntando al original y los mismos totales.
+ * Flujo TRANSACCIONAL:
+ *   1) RPC `emitir_nota` (Postgres): reserva correlativo con lock, copia receptor y
+ *      totales del original (o de los ítems parciales), crea la nota atómica.
+ *   2) Edge Function `emitir`: firma/envía al PSE real y actualiza estado server-side.
  *
- * La serie de la NC depende del comprobante afectado:
- *   factura ('01') -> 'FC01'   ·   boleta ('03') -> 'BC01'.
- *
- * Nota: el correlativo aquí es "naive" (mismo criterio que documents.api.ts);
- * en producción debería salir de una función transaccional en Postgres.
+ * La serie la decide el RPC: NC factura->FC01 / boleta->BC01 · ND factura->FD01 / boleta->BD01.
  */
+export async function issueNote(
+  companyId: string,
+  originalDocId: string,
+  tipoNota: '07' | '08',
+  motivoCodigo: string,
+  motivoDesc: string,
+  items?: { descripcion: string; cantidad: number; precioUnitario: number; tipoAfectacion?: string }[],
+): Promise<CreditNoteRow> {
+  const { data, error } = await supabase.rpc('emitir_nota', {
+    p_company_id: companyId,
+    p_ref_document_id: originalDocId,
+    p_tipo_nota: tipoNota,
+    p_motivo_codigo: motivoCodigo,
+    p_motivo_desc: motivoDesc,
+    p_items: items
+      ? items.map((i) => ({
+          descripcion: i.descripcion,
+          cantidad: i.cantidad,
+          precio_unitario: i.precioUnitario,
+          tipo_afectacion: i.tipoAfectacion ?? '10',
+        }))
+      : null,
+    p_idempotency_key: crypto.randomUUID(),
+  })
+  if (error) throw error
+  const reserved = data as { id: string; reused?: boolean }
+
+  // Emitir en el motor (real o simulado). No re-emite si ya existía.
+  if (!reserved.reused) await emitirEnMotor(reserved.id)
+
+  const { data: nc, error: getErr } = await supabase
+    .from('documents').select('*').eq('id', reserved.id).single()
+  if (getErr) throw getErr
+  return nc as CreditNoteRow
+}
+
+/** Compat: emite una nota de crédito (07). */
 export async function issueCreditNote(
   companyId: string,
   originalDocId: string,
   motivoCodigo: string,
   motivoDesc: string,
 ): Promise<CreditNoteRow> {
-  // 1) Comprobante original (acotado a la empresa actual · multi-tenant)
-  const { data: original, error: origError } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('company_id', companyId)
-    .eq('id', originalDocId)
-    .single()
-  if (origError) throw origError
-  const doc = original as CreditNoteRow
-
-  // 2) Serie de la NC según el tipo del comprobante afectado
-  const serie = doc.tipo_doc === '01' ? 'FC01' : 'BC01'
-
-  // 3) Correlativo siguiente para esa serie / tipo '07'
-  const { data: last } = await supabase
-    .from('documents')
-    .select('correlativo')
-    .eq('company_id', companyId)
-    .eq('tipo_doc', '07')
-    .eq('serie', serie)
-    .order('correlativo', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  const correlativo = ((last?.correlativo as number | undefined) ?? 0) + 1
-
-  // 4) Cliente del comprobante original (para el payload SUNAT)
-  let cliente: { tipoDoc: string; numDoc?: string; denominacion: string } = {
-    tipoDoc: '1',
-    denominacion: 'Cliente varios',
-  }
-  if (doc.customer_id) {
-    const { data: cust } = await supabase
-      .from('customers')
-      .select('tipo_doc, num_doc, denominacion')
-      .eq('id', doc.customer_id)
-      .maybeSingle()
-    if (cust) {
-      const c = cust as CustomerLite
-      cliente = {
-        tipoDoc: c.tipo_doc,
-        numDoc: c.num_doc ?? undefined,
-        denominacion: c.denominacion,
-      }
-    }
-  }
-
-  const numeroOriginal = numeroDoc(doc.serie, doc.correlativo)
-
-  // 5) Emitir la NC en el motor SUNAT (hoy: mock -> siempre acepta)
-  const result = await emisor.emitir({
-    tipoDoc: '07',
-    serie,
-    correlativo,
-    cliente,
-    items: [
-      {
-        descripcion: `Nota de crédito (${motivoCodigo} · ${motivoDesc}) sobre ${numeroOriginal}`,
-        cantidad: 1,
-        precioUnitario: doc.total,
-      },
-    ],
-  })
-
-  // 6) Guardar la NC con los mismos totales del original
-  const { data: nc, error } = await supabase
-    .from('documents')
-    .insert({
-      company_id: companyId,
-      customer_id: doc.customer_id,
-      tipo_doc: '07',
-      serie,
-      correlativo,
-      moneda: doc.moneda,
-      total_gravado: doc.total_gravado,
-      total_igv: doc.total_igv,
-      total: doc.total,
-      estado_sunat: result.estado,
-      cdr: result.cdr ?? null,
-      pdf_url: result.pdfUrl ?? null,
-      ref_document_id: originalDocId,
-      idempotency_key: crypto.randomUUID(),
-    })
-    .select()
-    .single()
-  if (error) throw error
-
-  return nc as CreditNoteRow
+  return issueNote(companyId, originalDocId, '07', motivoCodigo, motivoDesc)
 }

@@ -14,8 +14,8 @@
         />
 
         <div class="k-brand">
-          <div class="k-logo-sm" aria-hidden="true">K</div>
-          <span class="k-wordmark gt-xs">Konversa</span>
+          <img class="k-logo-sm" src="/brand/badge.svg" alt="" aria-hidden="true" />
+          <span class="k-wordmark gt-xs">Emmisa</span>
         </div>
 
         <div class="k-divider gt-xs" aria-hidden="true" />
@@ -102,8 +102,8 @@
 
     <q-drawer v-model="drawer" show-if-above bordered :width="264">
       <div class="k-drawer-brand">
-        <div class="k-logo-sm" aria-hidden="true">K</div>
-        <span class="k-wordmark">Konversa</span>
+        <img class="k-logo-sm" src="/brand/badge.svg" alt="" aria-hidden="true" />
+        <span class="k-wordmark">Emmisa</span>
       </div>
 
       <q-list padding>
@@ -117,7 +117,8 @@
     </q-drawer>
 
     <q-page-container>
-      <router-view />
+      <!-- key por empresa: al cambiar de empresa, la página se re-monta y recarga sus datos -->
+      <router-view :key="company.current?.id ?? 'none'" />
     </q-page-container>
   </q-layout>
 </template>
@@ -149,8 +150,10 @@ const links = [
   { to: '/clientes', label: 'Clientes', icon: 'people' },
   { to: '/proveedores', label: 'Proveedores', icon: 'local_shipping' },
   { to: '/compras', label: 'Compras', icon: 'shopping_cart' },
+  { to: '/cuentas-por-cobrar', label: 'Cuentas por cobrar', icon: 'payments' },
   { to: '/caja', label: 'Caja', icon: 'point_of_sale' },
   { to: '/reportes', label: 'Reportes', icon: 'bar_chart' },
+  { to: '/revendedor', label: 'Revendedor', icon: 'storefront' },
   { to: '/configuracion', label: 'Configuración', icon: 'settings' },
 ]
 
@@ -212,7 +215,7 @@ onMounted(async () => {
   font-weight: 800;
   font-size: 18px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.22);
+  box-shadow: none;
 }
 
 .k-wordmark {

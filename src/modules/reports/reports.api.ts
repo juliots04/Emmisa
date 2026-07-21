@@ -1,8 +1,7 @@
 import { supabase } from '@/lib/supabase'
-import type { EstadoSunat } from '@/types'
 
-// Solo los comprobantes aceptados por SUNAT cuentan como ventas reales.
-const ACEPTADO: EstadoSunat = 'aceptado'
+// Los reportes se agregan en el SERVIDOR (RPCs de la migración 0015) para no
+// depender del límite de filas de PostgREST (que causaba subconteo de importes).
 
 export interface SalesSummary {
   totalFacturado: number
@@ -22,85 +21,38 @@ export interface TopProduct {
   total: number
 }
 
-/**
- * Resumen de ventas: total facturado (suma de `total` de comprobantes aceptados),
- * número de comprobantes y ticket promedio.
- */
 export async function getSummary(companyId: string): Promise<SalesSummary> {
-  const { data, error } = await supabase
-    .from('documents')
-    .select('total')
-    .eq('company_id', companyId)
-    .eq('estado_sunat', ACEPTADO)
+  const { data, error } = await supabase.rpc('reporte_resumen', { p_company_id: companyId })
   if (error) throw error
-
-  const rows = (data ?? []) as { total: number }[]
-  const totalFacturado = rows.reduce((acc, r) => acc + Number(r.total), 0)
-  const numComprobantes = rows.length
-  const ticketPromedio = numComprobantes ? totalFacturado / numComprobantes : 0
-  return { totalFacturado, numComprobantes, ticketPromedio }
+  const r = (data ?? {}) as { ventas?: number; n?: number; ticket_prom?: number }
+  return {
+    totalFacturado: Number(r.ventas ?? 0),
+    numComprobantes: Number(r.n ?? 0),
+    ticketPromedio: Number(r.ticket_prom ?? 0),
+  }
 }
 
-/**
- * Ventas agrupadas por día (últimos `days` días). Trae los comprobantes del rango
- * y agrupa en JS por fecha local. El orden ascendente de `created_at` garantiza
- * que los buckets del Map queden en orden cronológico.
- */
 export async function getSalesByDay(companyId: string, days = 14): Promise<SalesByDay[]> {
-  const since = new Date()
-  since.setDate(since.getDate() - (days - 1))
-  since.setHours(0, 0, 0, 0)
-
-  const { data, error } = await supabase
-    .from('documents')
-    .select('total, created_at')
-    .eq('company_id', companyId)
-    .eq('estado_sunat', ACEPTADO)
-    .gte('created_at', since.toISOString())
-    .order('created_at', { ascending: true })
+  const { data, error } = await supabase.rpc('reporte_ventas_por_dia', { p_company_id: companyId, p_dias: days })
   if (error) throw error
-
-  const rows = (data ?? []) as { total: number; created_at: string }[]
-  const byDay = new Map<string, SalesByDay>()
-  for (const r of rows) {
-    const fecha = new Date(r.created_at).toLocaleDateString('es-PE')
-    const bucket = byDay.get(fecha) ?? { fecha, total: 0, cantidad: 0 }
-    bucket.total += Number(r.total)
-    bucket.cantidad += 1
-    byDay.set(fecha, bucket)
-  }
-  return [...byDay.values()]
+  const rows = (data ?? []) as { dia: string; total: number; n: number }[]
+  return rows.map((r) => ({
+    fecha: new Date(r.dia).toLocaleDateString('es-PE'),
+    total: Number(r.total),
+    cantidad: Number(r.n),
+  }))
 }
 
-/**
- * Productos más vendidos: trae los ítems de la empresa (join con `documents`
- * por `company_id`, solo aceptados), agrupa por descripción sumando cantidad y
- * total, y ordena por total descendente.
- */
 export async function getTopProducts(companyId: string, limit = 10): Promise<TopProduct[]> {
-  const { data, error } = await supabase
-    .from('document_items')
-    .select('descripcion, cantidad, total, documents!inner(company_id, estado_sunat)')
-    .eq('documents.company_id', companyId)
-    .eq('documents.estado_sunat', ACEPTADO)
+  const { data, error } = await supabase.rpc('reporte_top_productos', { p_company_id: companyId, p_limit: limit })
   if (error) throw error
+  const rows = (data ?? []) as { descripcion: string; cantidad: number; monto: number }[]
+  return rows.map((r) => ({ descripcion: r.descripcion, cantidad: Number(r.cantidad), total: Number(r.monto) }))
+}
 
-  const rows = (data ?? []) as unknown as {
-    descripcion: string
-    cantidad: number
-    total: number
-  }[]
-
-  const byDesc = new Map<string, TopProduct>()
-  for (const r of rows) {
-    const bucket = byDesc.get(r.descripcion) ?? {
-      descripcion: r.descripcion,
-      cantidad: 0,
-      total: 0,
-    }
-    bucket.cantidad += Number(r.cantidad)
-    bucket.total += Number(r.total)
-    byDesc.set(r.descripcion, bucket)
-  }
-  return [...byDesc.values()].sort((a, b) => b.total - a.total).slice(0, limit)
+/** Comprobantes por estado SUNAT (aceptado/rechazado/pendiente/anulado). */
+export async function getByEstado(companyId: string): Promise<Record<string, { n: number; total: number }>> {
+  const { data, error } = await supabase.rpc('reporte_por_estado', { p_company_id: companyId })
+  if (error) throw error
+  return (data ?? {}) as Record<string, { n: number; total: number }>
 }

@@ -73,6 +73,26 @@ export async function createSupplier(companyId: string, input: NewSupplier): Pro
   return data as Supplier
 }
 
+export async function updateSupplier(id: string, input: NewSupplier): Promise<Supplier> {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .update({
+      razon_social: input.razon_social,
+      ruc: input.ruc ?? null,
+      contacto: input.contacto ?? null,
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data as Supplier
+}
+
+export async function deleteSupplier(id: string): Promise<void> {
+  const { error } = await supabase.from('suppliers').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ==================== COMPRAS ====================
 export async function listPurchases(companyId: string): Promise<Purchase[]> {
   const { data, error } = await supabase
@@ -88,6 +108,7 @@ export interface NewPurchaseItem {
   descripcion: string
   cantidad: number
   costo: number
+  productId?: string | null
 }
 
 export interface NewPurchase {
@@ -96,41 +117,44 @@ export interface NewPurchase {
   serie_numero?: string | null
   fecha?: string
   items: NewPurchaseItem[]
+  moneda?: string
+  /** contado | credito (crédito genera cuenta por pagar). */
+  condicion_pago?: string
+  fecha_vencimiento?: string | null
+  /** Si true, la compra INGRESA a inventario (recepción de mercadería). */
+  afecta_inventario?: boolean
+  warehouse_id?: string | null
 }
 
+/**
+ * Registra la compra de forma TRANSACCIONAL vía RPC `registrar_compra`:
+ * inserta cabecera + ítems, separa IGV, arma la cuenta por pagar (si es a crédito)
+ * y — si afecta_inventario — ingresa la mercadería al stock (kardex).
+ */
 export async function createPurchase(companyId: string, input: NewPurchase): Promise<Purchase> {
-  const items = input.items.map((it) => ({
-    descripcion: it.descripcion,
-    cantidad: it.cantidad,
-    costo: it.costo,
-    total: Number((it.cantidad * it.costo).toFixed(2)),
-  }))
-  const total = Number(items.reduce((acc, it) => acc + it.total, 0).toFixed(2))
-
-  const { data, error } = await supabase
-    .from('purchases')
-    .insert({
-      company_id: companyId,
-      supplier_id: input.supplier_id ?? null,
-      tipo_doc: input.tipo_doc ?? '01',
-      serie_numero: input.serie_numero ?? null,
-      fecha: input.fecha ?? new Date().toISOString().slice(0, 10),
-      total,
-    })
-    .select()
-    .single()
+  const { data: res, error } = await supabase.rpc('registrar_compra', {
+    p_company_id: companyId,
+    p_supplier_id: input.supplier_id ?? null,
+    p_tipo_doc: input.tipo_doc ?? '01',
+    p_serie_numero: input.serie_numero ?? null,
+    p_fecha: input.fecha ?? null,
+    p_items: input.items.map((it) => ({
+      product_id: it.productId ?? null,
+      descripcion: it.descripcion,
+      cantidad: it.cantidad,
+      costo: it.costo,
+    })),
+    p_moneda: input.moneda ?? 'PEN',
+    p_condicion_pago: input.condicion_pago ?? 'contado',
+    p_fecha_vencimiento: input.fecha_vencimiento ?? null,
+    p_afecta_inventario: input.afecta_inventario ?? false,
+    p_warehouse_id: input.warehouse_id ?? null,
+  })
   if (error) throw error
-
-  const purchase = data as Purchase
-
-  if (items.length > 0) {
-    const { error: itemsError } = await supabase
-      .from('purchase_items')
-      .insert(items.map((it) => ({ purchase_id: purchase.id, ...it })))
-    if (itemsError) throw itemsError
-  }
-
-  return purchase
+  const { id } = res as { id: string }
+  const { data: purchase, error: getErr } = await supabase.from('purchases').select('*').eq('id', id).single()
+  if (getErr) throw getErr
+  return purchase as Purchase
 }
 
 export async function listPurchaseItems(purchaseId: string): Promise<PurchaseItem[]> {

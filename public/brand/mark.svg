@@ -1,0 +1,18 @@
+<!-- Emmisa · símbolo (Acordeón Emisor) · duotono para fondo CLARO -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Emmisa">
+  <defs>
+    <linearGradient id="emmisaA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a5b4fc" /><stop offset="1" stop-color="#6366f1" />
+    </linearGradient>
+    <linearGradient id="emmisaB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6366f1" /><stop offset="1" stop-color="#4338ca" />
+    </linearGradient>
+  </defs>
+  <g transform="rotate(-11 32 32)">
+    <polygon points="9,26 20.5,16 20.5,38 9,48" fill="url(#emmisaA)" />
+    <polygon points="20.5,16 32,26 32,48 20.5,38" fill="url(#emmisaB)" />
+    <polygon points="32,26 43.5,16 43.5,38 32,48" fill="url(#emmisaA)" />
+    <polygon points="43.5,16 55,26 55,48 43.5,38" fill="url(#emmisaB)" />
+    <path d="M20.5 16.5V37.5M43.5 16.5V37.5" stroke="#c7d2fe" stroke-opacity=".5" stroke-width=".9" />
+  </g>
+</svg>

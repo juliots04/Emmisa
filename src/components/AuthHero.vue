@@ -1,8 +1,8 @@
 <template>
   <div class="k-hero gt-sm column justify-between">
     <div class="row items-center q-gutter-sm">
-      <div class="k-logo-sm">K</div>
-      <span class="k-hero-brand">Konversa</span>
+      <img class="k-logo-sm" src="/brand/badge.svg" alt="" aria-hidden="true" />
+      <span class="k-hero-brand">Emmisa</span>
     </div>
 
     <div>
