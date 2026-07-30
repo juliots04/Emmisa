@@ -6,41 +6,47 @@
    ============================================================ */
 
 :root {
-  /* Marca (idéntica en ambos modos) */
-  --q-primary: #6366f1; /* índigo */
+  /* Acento monocromo (se define por modo más abajo; sin morado).
+     Oscuro → blanco translúcido "glass" · Claro → grafito. */
+  --q-primary: #26262b;
   --q-secondary: #8b8b9e;
   --q-positive: #22c55e;
   --q-negative: #ef4444;
   --q-warning: #f59e0b;
   --q-info: #38bdf8;
+  /* Texto legible SOBRE rellenos semánticos claros (ámbar/verde), en ambos modos.
+     Blanco sobre warning/positive daba ~2.2:1; con estos pasa a >4.5:1. */
+  --k-on-warning: #201500;
+  --k-on-positive: #052e16;
 }
 
-/* ---------- Tokens · modo OSCURO ---------- */
+/* ---------- Tokens · modo OSCURO (paleta grises Google) ---------- */
 .body--dark {
-  --k-bg: #0a0a0c; /* fondo de la página */
-  --k-surface: #161619; /* tarjetas / contenedores */
-  --k-surface-2: #1f1f24; /* inputs / hover */
-  --k-border: rgba(255, 255, 255, 0.07);
-  --k-border-hover: rgba(255, 255, 255, 0.16);
-  --k-text: #f4f4f6;
-  --k-muted: #9a9aa6;
-  --k-active-bg: rgba(99, 102, 241, 0.14);
-  --k-active-text: #c7d2fe;
+  --q-primary: rgba(255, 255, 255, 0.95); /* acento glass blanco (texto/iconos/halos) */
+  --k-bg: #1e2024; /* fondo body oscuro (aprox. del swatch) */
+  --k-surface: #2a2b2e; /* tarjetas / contenedores */
+  --k-surface-2: #35363a; /* inputs / hover (Google dark elevado) */
+  --k-border: rgba(255, 255, 255, 0.12);
+  --k-border-hover: rgba(255, 255, 255, 0.24);
+  --k-text: #e8eaed; /* grey 200 */
+  --k-muted: #b0b6bc; /* subido de #9aa0a6 → captions/labels pasan a ~5.3:1 (WCAG AA) */
+  --k-active-bg: rgba(255, 255, 255, 0.05); /* resaltados en blanco translúcido (sutil) */
+  --k-active-text: #ffffff;
   --k-radius: 20px;
   --k-radius-sm: 14px;
 }
 
-/* ---------- Tokens · modo CLARO ---------- */
+/* ---------- Tokens · modo CLARO (paleta grises Google) ---------- */
 .body--light {
-  --k-bg: #f6f7f9; /* fondo gris muy claro */
-  --k-surface: #ffffff; /* tarjetas blancas */
-  --k-surface-2: #eef0f3; /* inputs / hover */
-  --k-border: rgba(0, 0, 0, 0.08);
-  --k-border-hover: rgba(0, 0, 0, 0.16);
-  --k-text: #18181b;
-  --k-muted: #565c66;
-  --k-active-bg: rgba(99, 102, 241, 0.1);
-  --k-active-text: #4338ca;
+  --k-bg: #f8f9fa; /* Google grey 50 */
+  --k-surface: #dbd9d9; /* tarjetas blancas */
+  --k-surface-2: #2a2b2e21; /* inputs / hover · Google grey 100 */
+  --k-border: #dadce0; /* Google grey 300 */
+  --k-border-hover: #bdc1c6; /* Google grey 400 */
+  --k-text: #202124; /* grey 900 */
+  --k-muted: #5f6368; /* grey 700 */
+  --k-active-bg: rgba(0, 0, 0, 0.06); /* resaltado neutro (el glass blanco solo luce en oscuro) */
+  --k-active-text: #202124;
   --k-radius: 20px;
   --k-radius-sm: 14px;
 }
@@ -86,9 +92,18 @@ body {
 /* ---------- Contenedores / tarjetas ---------- */
 .q-card {
   background: var(--k-surface);
-  border: 1px solid var(--k-border);
+  border: none;
   border-radius: var(--k-radius);
   box-shadow: none;
+}
+/* Padding único para TODAS las secciones de tarjeta (coherencia) */
+.q-card__section--vert {
+  padding: 20px;
+}
+/* Aire extra al final de la última sección de cada tarjeta */
+.q-card > div:nth-last-child(1 of :not(.q--avoid-card-border)),
+.q-card > img:nth-last-child(1 of :not(.q--avoid-card-border)) {
+  margin-bottom: 30px;
 }
 .q-banner {
   background: var(--k-surface);
@@ -98,6 +113,142 @@ body {
 .q-menu,
 .q-dialog__inner > .q-card {
   border-radius: var(--k-radius);
+}
+/* ---------- Modales: base unificada (fondo + borde + escala de ancho) ---------- */
+.q-dialog__inner > .q-card {
+  background: var(--k-surface);
+  border: 1px solid var(--k-border); /* borde sutil para definir el modal en oscuro */
+  max-width: 95vw;
+}
+/* Escala de anchos: se elige por contenido (no anchos ad-hoc por página). */
+.k-dialog-sm { width: 420px; }
+.k-dialog-md { width: 560px; }
+.k-dialog-lg { width: 760px; }
+/* Cabecera consistente: título a la izquierda + botón cerrar a la derecha. */
+.k-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px 6px;
+}
+.k-modal-head .text-h6 {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+/* Los paneles de tabs dentro de modales heredan el #2a2b2e del modal.
+   (Quasar les pone su gris oscuro por defecto `--q-dark` en modo dark,
+   lo que hacía ver el cuerpo más oscuro que la cabecera.) */
+.q-dialog__inner > .q-card .q-tab-panels,
+.q-dialog__inner > .q-card .q-tab-panel {
+  background: transparent;
+}
+/* Footer de modales: botones con más aire y centrados vertical.
+   Se anula el margin-bottom global de 30px (que dejaba un hueco abajo y
+   descentraba los botones). */
+.q-dialog .q-card__actions {
+  padding: 14px 20px;
+  min-height: 60px;
+  align-items: center;
+  margin-bottom: 0 !important;
+}
+
+/* ---------- Modales estándar: header + footer FIJOS, el cuerpo scrollea ----------
+   El card (no maximizado) es una columna con alto máximo. La cabecera, las tabs,
+   los separadores y el footer NO se encogen; el cuerpo (la sección de contenido o
+   el panel de tabs) toma el resto y hace scroll. `:has(> .k-modal-head)` acota el
+   efecto a NUESTROS modales (no toca los diálogos de confirmación de $q.dialog). */
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* solo el cuerpo scrollea; recorta a las esquinas redondeadas */
+}
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) > .k-modal-head,
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) > .q-tabs,
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) > .q-separator,
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) > .q-card__actions {
+  flex: 0 0 auto;
+}
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) > .q-card__section:not(.k-modal-head),
+.q-dialog__inner--minimized > .q-card:has(> .k-modal-head) > .q-tab-panels {
+  flex: 1 1 auto;
+  min-height: 0; /* imprescindible para que un hijo flex pueda scrollear */
+  overflow-y: auto;
+  overflow-x: hidden; /* clip del deslizamiento horizontal entre pestañas */
+}
+
+/* ---------- Calendario (q-date) coherente con el tema ---------- */
+.q-date {
+  background: var(--k-surface);
+  border-radius: var(--k-radius);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
+  min-width: 300px;
+}
+.q-date__view {
+  padding: 14px;
+}
+.q-date__navigation {
+  color: var(--k-text);
+}
+.q-date__navigation .q-btn {
+  color: var(--k-text);
+}
+.q-date__calendar-weekdays > div {
+  color: var(--k-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.q-date__calendar-item .q-btn {
+  border-radius: 10px;
+  font-weight: 600;
+}
+.q-date__calendar-item .q-btn:hover {
+  background: var(--k-active-bg);
+}
+/* Día seleccionado: sólido y de alto contraste en ambos modos */
+.q-date .q-btn.bg-primary {
+  background: var(--k-text) !important;
+  color: var(--k-bg) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+/* "Hoy" (marcado con borde) usa el tono muted */
+.q-date__today {
+  box-shadow: 0 0 0 1px var(--k-border-hover) inset;
+}
+
+/* ---------- Ola líquida al abrir un listbox (global q-menu) ---------- */
+/* Las opciones entran en cascada (desenfoque → nítido) dando sensación líquida. */
+.q-menu {
+  transform-origin: top center;
+}
+.q-menu .q-item {
+  animation: k-wave-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.q-menu .q-item:nth-child(1) { animation-delay: 0s; }
+.q-menu .q-item:nth-child(2) { animation-delay: 0.03s; }
+.q-menu .q-item:nth-child(3) { animation-delay: 0.06s; }
+.q-menu .q-item:nth-child(4) { animation-delay: 0.09s; }
+.q-menu .q-item:nth-child(5) { animation-delay: 0.12s; }
+.q-menu .q-item:nth-child(6) { animation-delay: 0.15s; }
+.q-menu .q-item:nth-child(7) { animation-delay: 0.18s; }
+.q-menu .q-item:nth-child(8) { animation-delay: 0.21s; }
+.q-menu .q-item:nth-child(9) { animation-delay: 0.24s; }
+.q-menu .q-item:nth-child(10) { animation-delay: 0.27s; }
+.q-menu .q-item:nth-child(n + 11) { animation-delay: 0.3s; }
+@keyframes k-wave-in {
+  from {
+    opacity: 0;
+    transform: translateY(-9px);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 
 /* ---------- Botones ---------- */
@@ -116,11 +267,75 @@ body {
   box-shadow: none !important;
 }
 
+/* ---------- Acento "glass" en modo oscuro ----------
+   Como --q-primary es blanco translúcido, los controles rellenos "primary"
+   (botones/píldoras/badges) se pintan como vidrio esmerilado: fondo blanco muy
+   translúcido + borde sutil + texto claro, legible sobre el fondo oscuro. */
+.body--dark .q-btn.bg-primary,
+.body--dark .q-badge.bg-primary,
+.body--dark .q-chip.bg-primary {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #e8eaed !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+/* Botón primario: sin borde y fondo un poco más claro que píldoras/badges. */
+.body--dark .q-btn.bg-primary {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border: none;
+}
+/* El texto/icono dentro del chip primary debe seguir el color glass, no el blanco. */
+.body--dark .q-chip.bg-primary .q-chip__content,
+.body--dark .q-chip.bg-primary .q-icon {
+  color: #e8eaed !important;
+}
+.body--dark .q-btn.bg-primary:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* ---------- Contraste: texto OSCURO sobre rellenos claros (ámbar/verde) ----------
+   El blanco sobre warning/positive/amber daba ~2.2:1 (ilegible). Con texto oscuro
+   pasa >4.5:1. Se resuelve GLOBAL (no por página) sobre botones/chips/badges/banners. */
+.q-btn.bg-warning,
+.q-badge.bg-warning,
+.q-chip.bg-warning,
+.q-banner.bg-warning,
+.q-btn.bg-amber,
+.q-btn.bg-amber-7,
+.q-badge.bg-amber,
+.q-badge.bg-amber-7,
+.q-chip.bg-amber,
+.q-chip.bg-amber-7 {
+  color: var(--k-on-warning) !important;
+}
+.q-btn.bg-positive,
+.q-badge.bg-positive,
+.q-chip.bg-positive,
+.q-banner.bg-positive {
+  color: var(--k-on-positive) !important;
+}
+/* El ícono dentro hereda el color oscuro del texto. */
+.q-btn.bg-warning .q-icon,
+.q-chip.bg-warning .q-icon,
+.q-badge.bg-warning .q-icon,
+.q-btn.bg-positive .q-icon,
+.q-chip.bg-positive .q-icon,
+.q-badge.bg-positive .q-icon {
+  color: inherit !important;
+}
+
+/* ---------- Grises fijos de Quasar en oscuro → token muted del tema ----------
+   text-grey-6/7/8 no reaccionan al modo y caen a 2.3–2.6:1 sobre superficies oscuras. */
+.body--dark .text-grey-6,
+.body--dark .text-grey-7,
+.body--dark .text-grey-8 {
+  color: var(--k-muted) !important;
+}
+
 /* ---------- Inputs: minimalista SIN bordes (relleno suave tipo tarjeta) ---------- */
 .q-field--outlined .q-field__control {
   border-radius: var(--k-radius-sm);
   background: var(--k-surface-2);
-  transition: box-shadow 0.15s ease, background 0.15s ease;
+  transition: box-shadow 0.15s ease, background 0.15s ease, border-radius 0.28s ease;
 }
 /* Sin borde en reposo, hover ni foco (Quasar lo dibuja con :before/:after). */
 .q-field--outlined .q-field__control:before,
@@ -139,6 +354,118 @@ body {
    distintas cuando un campo reserva espacio para su mensaje de error). */
 .q-field--outlined {
   align-self: flex-start;
+}
+/* Centra verticalmente el contenido (ícono + texto) dentro de la altura del campo
+   (evita que el texto/ícono queden pegados arriba en inputs altos). */
+.q-field:not(.q-textarea) .q-field__control {
+  align-items: center;
+}
+/* Inputs numéricos SIN las flechas nativas (spinner): se ven de más y eran una
+   vía para meter negativos. Quedan como un campo de texto limpio. */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ============================================================
+   ESCALA DE TAMAÑOS COHERENTE (toda la app)
+   Un único tamaño de control para inputs/selects/botones. `dense` deja de ser
+   más pequeño: todo comparte altura, fuente y padding → sin mezcla de tamaños.
+   ============================================================ */
+.q-field--outlined .q-field__control {
+  /* height: auto anula el `height: 56px` fijo de Quasar en los q-input; así inputs y
+     selects (que ya usan auto-height) comparten la MISMA altura (min-height 50px). */
+  height: auto;
+  min-height: 50px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+/* dense NO reduce el tamaño (misma altura que el resto) */
+.q-field--dense.q-field--outlined .q-field__control {
+  min-height: 50px;
+}
+.q-field__native,
+.q-field__input,
+.q-field__prefix,
+.q-field__suffix {
+  font-size: 14px;
+  line-height: 1.4;
+}
+.q-field__label {
+  font-size: 13px;
+}
+/* Icono prepend/append centrado a la nueva altura + un poco de aire con el texto */
+.q-field__marginal {
+  height: 50px;
+  font-size: 20px;
+}
+/* Checkbox / radio: el relleno usa el acento del tema (--q-primary, blanco en oscuro),
+   así que el check debe ir del color del FONDO para contrastar (si no, se ve todo
+   blanco en modo oscuro). Aplica global a q-checkbox y q-radio/q-toggle interno. */
+.q-checkbox__svg {
+  color: var(--k-bg);
+}
+
+.q-field__prepend {
+  padding-right: 10px;
+}
+
+/* Botones: altura consistente SOLO para botones sólidos. Los flat/round son
+   acciones inline (Limpiar, Vaciar, editar/borrar) y conservan su tamaño natural
+   para no inflar las filas que los contienen. */
+.q-btn {
+  font-size: 14px;
+}
+.q-btn:not(.q-btn--flat):not(.q-btn--round):not(.q-btn--fab) {
+  min-height: 40px;
+}
+.q-btn--dense:not(.q-btn--flat):not(.q-btn--round):not(.q-btn--fab) {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+/* ---------- Dropdown del select FUSIONADO con su caja ---------- */
+
+/* Hover del select → adopta el look de "abierto" (base plana); al salir vuelve
+   a todo redondeado (animado). Igual cuando está enfocado/abierto. */
+.q-select:hover .q-field__control,
+.q-select.q-field--focused .q-field__control {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.q-select.q-field--focused .q-field__control {
+  box-shadow: none; /* sin anillo de foco para que no marque la costura */
+}
+
+/* El listbox se ve como continuación de la caja (mismo fondo/ancho, sin costura) */
+.q-menu[role='listbox'] {
+  background: var(--k-surface-2);
+  border-radius: 0 0 var(--k-radius-sm) var(--k-radius-sm);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.16); /* sombra solo hacia abajo */
+  transform-origin: top center;
+}
+.q-menu[role='listbox'] .q-item {
+  min-height: 46px;
+  font-size: 14px;
+}
+
+/* Cierre: la "ola" se RETRAE hacia arriba (clip-path) + un fade SUAVE, igual al
+   de apertura. clip-path (no transform) para no interferir con el posicionado. */
+.q-menu[role='listbox'].q-transition--fade-leave-active {
+  transition: clip-path 0.24s cubic-bezier(0.5, 0, 0.9, 0.4), opacity 0.24s ease !important;
+}
+.q-menu[role='listbox'].q-transition--fade-leave-from {
+  opacity: 1 !important;
+  clip-path: inset(0 0 0 0);
+}
+.q-menu[role='listbox'].q-transition--fade-leave-to {
+  opacity: 0 !important; /* fade suave al desaparecer */
+  clip-path: inset(0 0 100% 0); /* recorta desde abajo → se recoge hacia arriba */
 }
 
 /* ---------- Header / Drawer ---------- */
@@ -170,9 +497,35 @@ body {
   font-size: 11px;
 }
 
-/* ---------- Tablas: mismo lenguaje que las tarjetas (redondeadas + borde sutil) ---------- */
-/* Quasar propaga el border-radius del contenedor a sus secciones (> div:first/last-child),
-   asi que se redondea sin overflow:hidden (no rompe el scroll horizontal). */
+/* ---------- Menús / dropdowns generales (cuenta, empresa, popups): diseño global ----------
+   Nota: los listbox de q-select tienen su propio estilo de "continuación" (más arriba),
+   por eso aquí se excluyen con :not([role='listbox']). */
+.q-menu {
+  background: var(--k-surface);
+}
+.q-menu:not([role='listbox']) {
+  border: 1px solid var(--k-border);
+  border-radius: var(--k-radius);
+  box-shadow: none; /* fuera la sombra pesada por defecto de Quasar */
+  overflow: hidden; /* esquinas redondeadas limpias */
+}
+.q-menu:not([role='listbox']) .q-list {
+  padding: 5px;
+}
+.q-menu:not([role='listbox']) .q-item {
+  border-radius: 10px;
+  min-height: 42px;
+  transition: background 0.14s ease;
+}
+.q-menu:not([role='listbox']) .q-item--clickable:hover {
+  background: var(--k-active-bg);
+}
+.q-menu:not([role='listbox']) .q-separator {
+  background: var(--k-border);
+}
+
+/* ---------- Tablas: DISEÑO ÚNICO GLOBAL (toda la app) ---------- */
+/* Contenedor tipo tarjeta: fondo de superficie + esquinas redondeadas. */
 .q-table__container {
   background: var(--k-surface);
   border-radius: var(--k-radius);
@@ -185,13 +538,297 @@ body {
   background: transparent;
   color: var(--k-text);
 }
-.q-table th {
+/* La tabla llena el ancho del contenedor: evita el hueco a la derecha cuando el
+   contenido es angosto. Si el contenido (nowrap) es más ancho, la ensancha y hace scroll. */
+.q-table {
+  width: 100%;
+}
+
+/* Header: fondo tintado (un poco más claro/distinto) que lo separa del cuerpo. */
+.q-table thead th {
+  background: var(--k-surface-2);
   color: var(--k-muted);
   text-transform: uppercase;
   font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  height: 46px;
+  border-bottom: 1px solid var(--k-border);
 }
+.q-table thead th:first-child {
+  border-top-left-radius: var(--k-radius);
+}
+.q-table thead th:last-child {
+  border-top-right-radius: var(--k-radius);
+}
+
+/* Cuerpo: filas con un fondo tenue (entre el cuerpo y el header, un poco menos
+   que el header) + hover sutil. */
 .q-table tbody td {
   border-color: var(--k-border);
+  font-size: 13.5px;
+  height: 52px;
+}
+/* Miniaturas en celdas: centradas verticalmente. Un <img> inline se apoya en la
+   línea base y deja un hueco debajo que hacía las filas CON imagen más altas que
+   las de solo texto; con esto toda fila mide lo mismo (alto uniforme, global). */
+.q-table tbody td img {
+  vertical-align: middle;
+}
+.q-table tbody tr {
+  background: var(--k-surface);
+  transition: background 0.12s ease;
+}
+.q-table tbody tr:hover {
+  background: color-mix(in srgb, var(--k-surface-2) 45%, var(--k-surface));
+}
+.q-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ---------- Columna de acciones (3 puntitos) fija a la derecha · GLOBAL ----------
+   La última columna queda pegada al borde derecho aunque se scrollee horizontalmente
+   (position: sticky; right: 0). Fondo opaco (igual al de la fila/cabecera, incl. hover)
+   para que el resto del contenido pase por debajo sin verse, + sombra a la izquierda. */
+.q-table thead tr > th:last-child,
+.q-table tbody tr > td:last-child {
+  position: sticky;
+  right: 0;
+  /* La columna de acciones se ajusta a su contenido (icono), sin absorber ancho
+     sobrante de la tabla → sin hueco a la derecha, y compacta (padding chico). */
+  width: 1px;
+  white-space: nowrap;
+  padding-left: 4px;
+  padding-right: 10px;
+}
+.q-table thead tr > th:last-child {
+  z-index: 3;
+  background: var(--k-surface-2);
+}
+.q-table tbody tr > td:last-child {
+  z-index: 1;
+  background: var(--k-surface);
+}
+.q-table tbody tr:hover > td:last-child {
+  background: color-mix(in srgb, var(--k-surface-2) 45%, var(--k-surface));
+}
+
+/* Columna de selección (checkbox) fija a la IZQUIERDA · GLOBAL (espejo de la de
+   acciones a la derecha). Solo la primera celda cuando contiene el checkbox, para NO
+   fijar la primera columna de datos en tablas sin selección múltiple. */
+.q-table thead tr > th:first-child:has(.q-checkbox),
+.q-table tbody tr > td:first-child:has(.q-checkbox) {
+  position: sticky;
+  left: 0;
+}
+.q-table thead tr > th:first-child:has(.q-checkbox) {
+  z-index: 3;
+  background: var(--k-surface-2);
+}
+.q-table tbody tr > td:first-child:has(.q-checkbox) {
+  z-index: 1;
+  background: var(--k-surface);
+}
+.q-table tbody tr:hover > td:first-child:has(.q-checkbox) {
+  background: color-mix(in srgb, var(--k-surface-2) 45%, var(--k-surface));
+}
+
+/* Barras superior/inferior: mismo tono tenue que las filas. */
+.q-table__top,
+.q-table__bottom {
+  border-color: var(--k-border);
+  color: var(--k-muted);
+  min-height: 52px;
+}
+.q-table__bottom {
+  background: var(--k-surface);
+  border-bottom-left-radius: var(--k-radius);
+  border-bottom-right-radius: var(--k-radius);
+}
+
+/* Recorta el contenido a las esquinas redondeadas (evita el "doble redondeo"). */
+.q-table__container {
+  overflow: hidden;
+}
+
+/* ---------- Estado vacío: área más alta y centrada ----------
+   SOLO layout: no inyecta ni oculta contenido, para respetar los #no-data
+   personalizados de varias páginas (Comprobantes, Productos, etc.). */
+.q-table__bottom--nodata {
+  min-height: 210px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--k-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+/* Ícono por defecto de "sin datos" (solo el hijo directo): más grande y tenue. */
+.q-table__bottom--nodata > .q-icon {
+  font-size: 40px;
+  opacity: 0.4;
+}
+
+/* Durante la carga, Quasar muestra el texto "Cargando..." en el área no-data Y,
+   por separado, agrega el slot #loading (el skeleton) justo debajo. Ocultamos ese
+   texto para que SOLO se vea el skeleton, pegado bajo el header.
+   (La clase .q-table--loading vive en el contenedor mientras :loading es true.) */
+.q-table--loading .q-table__bottom--nodata {
+  display: none;
+}
+
+/* ---------- Cambio de valor en columnas de estado: morfeo suave (efecto "líquido") ----------
+   Al cambiar activo↔inactivo (o cualquier estado), Vue parchea la clase sobre el
+   MISMO elemento; la transición hace que el color/fondo morfeen en vez de saltar. */
+.k-pill,
+.k-stock,
+.k-chip,
+.k-afect,
+.k-badge,
+.k-stock-tag {
+  transition: background-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease,
+    border-color 0.35s ease;
+}
+.k-pill .k-dot,
+.k-dot {
+  transition: background-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+/* ---------- Primitivas reutilizables de tabla (globales) ----------
+   Chip, píldora de estado (con punto), y estado vacío. Compartidas por
+   Productos, Servicios, Series, etc. (antes vivían scoped en ProductsPage). */
+.k-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--k-surface-2);
+  color: var(--k-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.k-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.k-pill .k-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.k-pill--ok {
+  color: var(--q-positive);
+  background: color-mix(in srgb, var(--q-positive) 15%, transparent);
+}
+.k-pill--muted {
+  color: var(--k-muted);
+  background: color-mix(in srgb, var(--k-muted) 18%, transparent);
+}
+.k-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 48px 16px;
+  width: 100%;
+}
+.k-state-icon {
+  color: var(--k-muted);
+  opacity: 0.6;
+}
+
+/* ---------- Animación "líquida" al aparecer / cambiar las filas (global) ---------- */
+@keyframes k-table-liquid {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    /* Termina en `none` (no en un transform identidad): un transform residual en el
+       <tr> rompería el position:sticky de la columna de acciones fija a la derecha. */
+    transform: none;
+  }
+}
+.q-table tbody tr {
+  animation: k-table-liquid 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.q-table tbody tr:nth-child(1) { animation-delay: 0.02s; }
+.q-table tbody tr:nth-child(2) { animation-delay: 0.05s; }
+.q-table tbody tr:nth-child(3) { animation-delay: 0.08s; }
+.q-table tbody tr:nth-child(4) { animation-delay: 0.11s; }
+.q-table tbody tr:nth-child(5) { animation-delay: 0.14s; }
+.q-table tbody tr:nth-child(6) { animation-delay: 0.17s; }
+.q-table tbody tr:nth-child(7) { animation-delay: 0.20s; }
+.q-table tbody tr:nth-child(8) { animation-delay: 0.23s; }
+.q-table tbody tr:nth-child(n + 9) { animation-delay: 0.26s; }
+/* Respeta a quien prefiere menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  .q-table tbody tr { animation: none; }
+}
+
+/* ---------- Swap "cubo" filtros ⇄ acciones masivas (global) ----------
+   Contenedor .k-toolbar-swap que alterna dos caras con <Transition name="k-swap">.
+   Giro tipo cubo (eje X) pivotando en el borde superior; overflow:hidden contiene el
+   3D para que NO genere scroll. SIN fade. Lo usan Productos, Categorías, Marcas, Series
+   y cualquier módulo futuro con acciones masivas (solo hay que usar las clases). */
+.k-toolbar-swap {
+  position: relative;
+  perspective: 900px;
+  overflow: hidden;
+}
+.k-swap-enter-active,
+.k-swap-leave-active {
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0.1, 0.2, 1),
+    filter 0.5s ease;
+  transform-origin: center top;
+  backface-visibility: hidden;
+}
+.k-swap-leave-active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+/* La cara que gira se sombrea (fade) para dar profundidad de cubo. */
+.k-swap-enter-from {
+  transform: rotateX(-90deg);
+  filter: brightness(0.55);
+}
+.k-swap-leave-to {
+  transform: rotateX(90deg);
+  filter: brightness(0.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-swap-enter-active,
+  .k-swap-leave-active {
+    transition: none;
+  }
+}
+
+/* Barra de acciones masivas (aparece al seleccionar filas) · GLOBAL. Algunas páginas
+   la tienen también en su <style scoped> (mismos valores); esto cubre las que no. */
+.k-bulk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: var(--k-radius-sm);
+  background: var(--k-active-bg);
+  color: var(--k-text);
+}
+.k-bulk-count {
+  font-weight: 700;
+  font-size: 13px;
 }
 
 /* ---------- Scrollbar sutil ---------- */
@@ -205,6 +842,75 @@ body {
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+/* Sin botones de flecha (izquierda/derecha, arriba/abajo) en ningún scrollbar. */
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ---------- Campos de formulario: sin espacio reservado abajo (GLOBAL) ----------
+   Quasar reserva 20px bajo los campos con `:rules` (.q-field--with-bottom) para el
+   mensaje de error. Como la validación es al enviar (toast), ese espacio solo
+   descuadra las filas (unas más altas que otras). Lo anulamos para que TODAS las
+   filas queden a la misma altura. (Refuerza el default hideBottomSpace de main.ts.) */
+.q-field--with-bottom {
+  padding-bottom: 0;
+}
+
+/* ---------- Scroll horizontal de tablas (GLOBAL) ----------
+   La barra va ARRIBA de la tabla, es una barra PROPIA que inyecta
+   src/lib/tableScroll.ts (.k-topscroll) y se sincroniza con el cuerpo. Por eso
+   ocultamos la barra nativa de abajo de Quasar (.q-table__middle). */
+.q-table__middle {
+  scrollbar-width: none; /* Firefox: oculta la barra nativa de abajo */
+}
+.q-table__middle::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+}
+
+/* Barra propia (dibujada por src/lib/tableScroll.ts), ARRIBA de la tabla.
+   100% personalizada: pista + thumb, sin nada nativo → sin flechas, sin espacios
+   en los extremos, thumb a todo el alto. Aparece solo si la tabla desborda. */
+.k-topscroll {
+  display: none;
+  position: relative;
+  height: 10px;
+  margin: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--k-text) 6%, transparent);
+  overflow: hidden;
+  touch-action: none;
+  cursor: default;
+}
+/* Con barra arriba: solo la TABLA en sí (el header) lleva las esquinas superiores
+   cuadradas, para que quede integrada bajo la barra. La tarjeta de AFUERA
+   (.q-table__container) conserva su redondeo. */
+.q-table__container.k-has-topscroll .q-table thead th:first-child {
+  border-top-left-radius: 0;
+}
+.q-table__container.k-has-topscroll .q-table thead th:last-child {
+  border-top-right-radius: 0;
+}
+.k-topscroll-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  min-width: 44px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--k-text) 32%, transparent);
+  cursor: default;
+  will-change: transform;
+  transition: background 0.15s ease;
+}
+.k-topscroll-thumb:hover {
+  background: color-mix(in srgb, var(--k-text) 48%, transparent);
+}
+.k-topscroll-thumb:active {
+  background: color-mix(in srgb, var(--k-text) 56%, transparent);
 }
 
 /* ---------- Marca / logo ---------- */
@@ -221,6 +927,11 @@ body {
   font-weight: 800;
   font-size: 26px;
   box-shadow: none;
+}
+/* En oscuro el acento es blanco: el logo va como "glass" para no perder la letra. */
+.body--dark .k-logo {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 /* ---------- Accesibilidad: menos movimiento ---------- */

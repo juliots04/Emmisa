@@ -1,14 +1,17 @@
 import { supabase } from '@/lib/supabase'
+import { cachedQuery, invalidateQueryCache } from '@/stores/queryCache'
 import type { Customer } from '@/types'
 
 export async function listCustomers(companyId: string): Promise<Customer[]> {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*')
-    .eq('company_id', companyId)
-    .order('denominacion')
-  if (error) throw error
-  return (data ?? []) as Customer[]
+  return cachedQuery(['customers', companyId], ['customers', `company:${companyId}`], async () => {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('denominacion')
+    if (error) throw error
+    return (data ?? []) as Customer[]
+  })
 }
 
 export interface NewCustomer {
@@ -33,6 +36,7 @@ export async function createCustomer(companyId: string, input: NewCustomer): Pro
     .select()
     .single()
   if (error) throw error
+  invalidateQueryCache()
   return data as Customer
 }
 
@@ -50,10 +54,16 @@ export async function updateCustomer(id: string, input: NewCustomer): Promise<Cu
     .select()
     .single()
   if (error) throw error
+  invalidateQueryCache()
   return data as Customer
 }
 
 export async function deleteCustomer(id: string): Promise<void> {
-  const { error } = await supabase.from('customers').delete().eq('id', id)
+  // .select() devuelve las filas borradas: si RLS lo bloquea (DELETE solo admin) viene vacío
+  // y NO lanza error → lo tratamos como permiso denegado, no como un "éxito" falso.
+  const { data, error } = await supabase.from('customers').delete().eq('id', id).select('id')
   if (error) throw error
+  if (!data || data.length === 0)
+    throw new Error('No se pudo eliminar el cliente (requiere permiso de administrador).')
+  invalidateQueryCache()
 }

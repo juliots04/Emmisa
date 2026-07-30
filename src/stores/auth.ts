@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { useCompanyStore } from '@/stores/company'
+import { useQueryCacheStore } from '@/stores/queryCache'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -17,6 +19,13 @@ export const useAuthStore = defineStore('auth', () => {
     supabase.auth.onAuthStateChange((_event, newSession) => {
       session.value = newSession
       user.value = newSession?.user ?? null
+      // Sesión cerrada por CUALQUIER vía (logout, expiración, otra pestaña): limpia el
+      // estado dependiente para no dejar la empresa del usuario anterior visible al
+      // siguiente (dispositivo compartido). Antes el reset solo estaba en los botones.
+      if (!newSession) {
+        useCompanyStore().reset()
+        useQueryCacheStore().clear()
+      }
     })
   }
 
@@ -52,6 +61,18 @@ export const useAuthStore = defineStore('auth', () => {
     if (error) throw error
   }
 
+  async function sendPasswordReset(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/nueva-contrasena`,
+    })
+    if (error) throw error
+  }
+
+  async function updatePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw error
+  }
+
   async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -62,7 +83,14 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut()
+    } finally {
+      // Garantiza la limpieza local aunque la llamada de red falle (offline):
+      // el listener onAuthStateChange también resetea, esto es cinturón-y-tirantes.
+      useCompanyStore().reset()
+      useQueryCacheStore().clear()
+    }
   }
 
   return {
@@ -74,6 +102,8 @@ export const useAuthStore = defineStore('auth', () => {
     signInWithGoogle,
     verifyEmailOtp,
     resendSignupCode,
+    sendPasswordReset,
+    updatePassword,
     signOut,
   }
 })

@@ -2,12 +2,18 @@
   <q-page class="q-pa-md">
     <div class="text-h5 q-mb-md">Inicio</div>
 
+    <SubscriptionBanner />
+
     <div class="row q-col-gutter-md">
       <div v-for="s in stats" :key="s.label" class="col-12 col-sm-4">
         <q-card>
           <q-card-section>
-            <div class="text-caption text-muted">{{ s.label }}</div>
-            <div class="text-h4">{{ s.value }}</div>
+            <div class="text-caption text-muted">
+              {{ s.label }}
+            </div>
+            <div class="text-h4">
+              {{ s.value }}
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -22,19 +28,24 @@
         </div>
       </q-card-section>
       <q-card-actions>
-        <q-btn color="primary" icon="receipt_long" label="Emitir comprobante" :to="{ name: 'emit' }" />
+        <q-btn
+          color="primary"
+          icon="receipt_long"
+          label="Emitir comprobante"
+          :to="{ name: 'emit' }"
+        />
       </q-card-actions>
     </q-card>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref, watch } from 'vue'
 import { notify } from '@/lib/toast'
 import { useCompanyStore } from '@/stores/company'
-import { listProducts } from '@/modules/products/products.api'
-import { listCustomers } from '@/modules/customers/customers.api'
-import { listDocuments } from '@/modules/documents/documents.api'
+import { supabase } from '@/lib/supabase'
+import { cachedQuery } from '@/stores/queryCache'
+import SubscriptionBanner from '@/components/SubscriptionBanner.vue'
 
 const company = useCompanyStore()
 const stats = ref<{ label: string; value: number }[]>([
@@ -43,18 +54,39 @@ const stats = ref<{ label: string; value: number }[]>([
   { label: 'Comprobantes', value: 0 },
 ])
 
-onMounted(async () => {
-  if (!company.current) return
+// Cuenta EXACTA sin traer filas (head: true): no queda topada por el límite de
+// paginación (antes usaba d.length con limit 500) ni descarga datos.
+async function countOf(table: 'products' | 'customers' | 'documents', id: string): Promise<number> {
+  const { count, error } = await supabase
+    .from(table)
+    .select('*', { count: 'exact', head: true })
+    .eq('company_id', id)
+  if (error) throw error // antes se tragaba el error y mostraba "0" (enmascaraba fallos)
+  return count ?? 0
+}
+async function loadStats(id: string) {
   try {
-    const id = company.current.id
-    const [p, c, d] = await Promise.all([listProducts(id), listCustomers(id), listDocuments(id)])
+    const [p, c, d] = await cachedQuery(
+      ['dashboard-counts', id],
+      ['dashboard', `company:${id}`],
+      () =>
+        Promise.all([countOf('products', id), countOf('customers', id), countOf('documents', id)]),
+    )
     stats.value = [
-      { label: 'Productos', value: p.length },
-      { label: 'Clientes', value: c.length },
-      { label: 'Comprobantes', value: d.length },
+      { label: 'Productos', value: p },
+      { label: 'Clientes', value: c },
+      { label: 'Comprobantes', value: d },
     ]
   } catch (e) {
     notify({ type: 'negative', message: (e as Error).message })
   }
-})
+}
+// Refresca al montar Y al cambiar de empresa (multiempresa / marca blanca).
+watch(
+  () => company.current?.id,
+  (id) => {
+    if (id) void loadStats(id)
+  },
+  { immediate: true },
+)
 </script>

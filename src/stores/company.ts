@@ -10,13 +10,22 @@ export const useCompanyStore = defineStore('company', () => {
 
   const STORAGE_KEY = 'konversa.current_company'
 
-  async function load() {
+  async function load(force = false) {
+    if (loaded.value && !force) return
     const { data, error } = await supabase.from('companies').select('*').order('created_at')
     if (error) throw error
     companies.value = (data ?? []) as Company[]
-    if (!current.value && companies.value.length > 0) {
-      const savedId = localStorage.getItem(STORAGE_KEY)
-      current.value = companies.value.find((c) => c.id === savedId) ?? companies.value[0]
+    if (companies.value.length > 0) {
+      if (current.value) {
+        // Ya hay una empresa activa: re-apúntala a la versión fresca (logo, datos…).
+        // Si la empresa activa ya no está (eliminada / acceso revocado), cae a la
+        // primera disponible en vez de conservar una referencia colgante.
+        current.value =
+          companies.value.find((c) => c.id === current.value!.id) ?? companies.value[0]
+      } else {
+        const savedId = localStorage.getItem(STORAGE_KEY)
+        current.value = companies.value.find((c) => c.id === savedId) ?? companies.value[0]
+      }
     }
     loaded.value = true
   }
@@ -56,12 +65,23 @@ export const useCompanyStore = defineStore('company', () => {
     const company = data as Company
     companies.value.push(company)
     current.value = company
+    // Persistir como empresa activa (igual que setCurrent) para que al recargar
+    // no se pierda la recién creada si ya hay otras empresas.
+    try {
+      localStorage.setItem(STORAGE_KEY, company.id)
+    } catch {
+      /* almacenamiento no disponible: no es crítico */
+    }
     return company
   }
 
   function setCurrent(company: Company) {
     current.value = company
-    localStorage.setItem(STORAGE_KEY, company.id)
+    try {
+      localStorage.setItem(STORAGE_KEY, company.id)
+    } catch {
+      /* almacenamiento no disponible (modo privado/cuota): no es crítico */
+    }
   }
 
   function reset() {

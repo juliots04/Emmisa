@@ -4,8 +4,14 @@
       <q-page class="flex flex-center q-pa-md">
         <div class="k-onboarding column items-center">
           <div class="text-center q-mb-lg">
-            <img class="k-logo q-mx-auto q-mb-md" src="/brand/badge.svg" alt="Emmisa" />
-            <div class="text-h4 text-weight-bold">Crea tu negocio</div>
+            <img
+              class="k-logo q-mx-auto q-mb-md"
+              src="/brand/badge.svg"
+              alt="Emmisa"
+            >
+            <div class="text-h4 text-weight-bold">
+              Crea tu negocio
+            </div>
             <div class="text-caption text-muted q-mt-xs">
               Configura tu empresa para empezar a facturar
             </div>
@@ -23,7 +29,12 @@
               class="k-stepper"
             >
               <!-- Paso 1: datos del negocio -->
-              <q-step :name="1" title="Negocio" icon="business" :done="step > 1">
+              <q-step
+                :name="1"
+                title="Negocio"
+                icon="business"
+                :done="step > 1"
+              >
                 <div class="q-gutter-md">
                   <q-input
                     v-model="ruc"
@@ -53,30 +64,39 @@
               </q-step>
 
               <!-- Paso 2: ubicación -->
-              <q-step :name="2" title="Ubicación" icon="place" :done="step > 2">
+              <q-step
+                :name="2"
+                title="Ubicación"
+                icon="place"
+                :done="step > 2"
+              >
                 <div class="q-gutter-md">
                   <q-input
                     v-model="direccion"
                     outlined
-                    label="Dirección"
-                    :rules="[maxLen(200)]"
+                    label="Dirección (domicilio fiscal) *"
+                    :rules="[required('La dirección es obligatoria'), maxLen(200)]"
                   />
                   <q-input
                     v-model="ubigeo"
                     outlined
-                    label="Ubigeo"
+                    label="Ubigeo *"
                     inputmode="numeric"
                     maxlength="6"
                     mask="######"
                     unmasked-value
-                    hint="código de 6 dígitos (opcional)"
-                    :rules="ubigeo ? [onlyDigits(), exactLen(6, 'Ubigeo: 6 dígitos')] : []"
+                    hint="código de 6 dígitos del distrito (obligatorio para SUNAT)"
+                    :rules="[required('El ubigeo es obligatorio'), onlyDigits(), exactLen(6, 'Ubigeo: 6 dígitos')]"
                   />
                 </div>
               </q-step>
 
               <!-- Paso 3: confirmar -->
-              <q-step :name="3" title="Confirmar" icon="check_circle">
+              <q-step
+                :name="3"
+                title="Confirmar"
+                icon="check_circle"
+              >
                 <div class="k-review">
                   <div class="k-review__row">
                     <span class="text-muted">RUC</span><span>{{ ruc || '—' }}</span>
@@ -98,7 +118,13 @@
 
               <template #navigation>
                 <q-stepper-navigation class="row items-center">
-                  <q-btn v-if="step > 1" flat color="primary" label="Atrás" @click="step--" />
+                  <q-btn
+                    v-if="step > 1"
+                    flat
+                    color="primary"
+                    label="Atrás"
+                    @click="step--"
+                  />
                   <q-space />
                   <q-btn
                     v-if="step < 3"
@@ -181,6 +207,17 @@ function next() {
       return
     }
   }
+  if (step.value === 2) {
+    // Domicilio fiscal + ubigeo son OBLIGATORIOS para SUNAT (RegistrationAddress del UBL).
+    const err = validate([
+      [direccion.value, [required('La dirección es obligatoria'), maxLen(200)]],
+      [ubigeo.value, [required('El ubigeo es obligatorio'), onlyDigits(), exactLen(6, 'Ubigeo: 6 dígitos')]],
+    ])
+    if (err) {
+      notify({ type: 'warning', message: err })
+      return
+    }
+  }
   step.value++
 }
 
@@ -211,8 +248,8 @@ async function submit() {
     return
   }
   const err = validate([
-    [direccion.value, [maxLen(200)]],
-    [ubigeo.value, ubigeo.value ? [onlyDigits(), exactLen(6, 'Ubigeo: 6 dígitos')] : []],
+    [direccion.value, [required('La dirección es obligatoria'), maxLen(200)]],
+    [ubigeo.value, [required('El ubigeo es obligatorio'), onlyDigits(), exactLen(6, 'Ubigeo: 6 dígitos')]],
   ])
   if (err) {
     step.value = 2
@@ -225,8 +262,8 @@ async function submit() {
       ruc: ruc.value,
       razon_social: razonSocial.value,
       regimen: regimen.value,
-      direccion: direccion.value || undefined,
-      ubigeo: ubigeo.value || undefined,
+      direccion: direccion.value,
+      ubigeo: ubigeo.value,
     })
     notify({ type: 'positive', message: 'Empresa creada' })
     router.push({ name: 'dashboard' })

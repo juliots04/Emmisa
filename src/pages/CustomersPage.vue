@@ -1,38 +1,114 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row items-center q-mb-md">
-      <div class="text-h5">Clientes</div>
-      <q-space />
-      <q-btn color="primary" icon="add" label="Nuevo" @click="openNew" />
-    </div>
+    <KModuleHeader
+      title="Clientes"
+      subtitle="Administra los clientes de tu empresa y sus documentos"
+      :refresh-fn="load"
+      new-label="Nuevo"
+      show-import
+      show-export
+      @new="openNew"
+      @export="onExport"
+    />
 
-    <q-table :rows="rows" :columns="columns" row-key="id" :loading="loading" flat bordered>
+    <q-table
+      :rows="rows"
+      :columns="columns"
+      row-key="id"
+      :loading="loading"
+      flat
+      bordered
+    >
       <template #body-cell-acciones="props">
-        <q-td :props="props" class="text-right">
-          <q-btn flat round dense icon="edit" size="sm" @click="openEdit(props.row)" />
-          <q-btn flat round dense icon="delete" size="sm" color="negative" @click="remove(props.row)" />
+        <q-td
+          :props="props"
+          class="text-right"
+        >
+          <q-btn
+            flat
+            round
+            dense
+            icon="edit"
+            size="sm"
+            @click="openEdit(props.row)"
+          />
+          <q-btn
+            flat
+            round
+            dense
+            icon="delete"
+            size="sm"
+            color="negative"
+            @click="remove(props.row)"
+          />
         </q-td>
+      </template>
+      <template #loading>
+        <KTableSkeleton />
       </template>
     </q-table>
 
     <q-dialog v-model="show">
-      <q-card style="min-width: 360px">
-        <q-card-section class="text-h6">{{ editingId ? 'Editar cliente' : 'Nuevo cliente' }}</q-card-section>
+      <q-card class="k-dialog-md">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            {{ editingId ? 'Editar cliente' : 'Nuevo cliente' }}
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-input v-model="form.denominacion" label="Nombre / Razón social" :rules="nameRules" lazy-rules autofocus />
-          <q-select v-model="form.tipo_doc" :options="docOptions" emit-value map-options label="Tipo de documento" />
+          <q-input
+            v-model="form.denominacion"
+            label="Nombre / Razón social"
+            :rules="nameRules"
+            lazy-rules="ondemand"
+            autofocus
+          />
+          <q-select
+            v-model="form.tipo_doc"
+            :options="docOptions"
+            emit-value
+            map-options
+            label="Tipo de documento"
+          />
           <q-input
             v-model="form.num_doc"
             :label="form.tipo_doc === '6' ? 'RUC' : 'DNI'"
-            :rules="[docByTipo(form.tipo_doc, false)]"
-            lazy-rules
+            :rules="[docByTipo(form.tipo_doc, form.tipo_doc === '6')]"
+            lazy-rules="ondemand"
           />
-          <q-input v-model="form.email" label="Email (opcional)" type="email" />
-          <q-input v-model="form.direccion" label="Dirección (opcional)" />
+          <q-input
+            v-model="form.email"
+            label="Email (opcional)"
+            type="email"
+            :rules="[email()]"
+            lazy-rules="ondemand"
+          />
+          <q-input
+            v-model="form.direccion"
+            label="Dirección (opcional)"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="saving" @click="save" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="saving"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -42,14 +118,20 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useQuasar, type QTableColumn } from 'quasar'
+import KTableSkeleton from '@/components/KTableSkeleton.vue'
+import KModuleHeader from '@/components/KModuleHeader.vue'
+import { exportTableXls } from '@/lib/exportTable'
 import { useCompanyStore } from '@/stores/company'
+import { useRealtime } from '@/lib/realtime'
 import { listCustomers, createCustomer, updateCustomer, deleteCustomer } from '@/modules/customers/customers.api'
-import { validate, nameRules, docByTipo } from '@/lib/validation'
+import { validate, nameRules, docByTipo, email } from '@/lib/validation'
 import { notify } from '@/lib/toast'
 import type { Customer } from '@/types'
 
 const $q = useQuasar()
 const company = useCompanyStore()
+// Realtime: refresca al crear/editar/eliminar clientes (incl. otras pestañas/usuarios).
+useRealtime('customers', () => company.current?.id, () => { void load() })
 const rows = ref<Customer[]>([])
 const loading = ref(false)
 const show = ref(false)
@@ -88,9 +170,13 @@ function openEdit(row: Customer) {
   show.value = true
 }
 
+function onExport() {
+  exportTableXls('clientes', columns, rows.value)
+}
+
 async function load() {
   if (!company.current) return
-  loading.value = true
+  loading.value = !rows.value.length
   try {
     rows.value = await listCustomers(company.current.id)
   } catch (e) {

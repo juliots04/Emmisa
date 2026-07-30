@@ -1,24 +1,42 @@
 <template>
   <div class="k-hero gt-sm column justify-between">
     <div class="row items-center q-gutter-sm">
-      <img class="k-logo-sm" src="/brand/badge.svg" alt="" aria-hidden="true" />
+      <img
+        class="k-logo-sm"
+        src="/brand/badge.svg"
+        alt=""
+        aria-hidden="true"
+      >
       <span class="k-hero-brand">Emmisa</span>
     </div>
 
     <div>
-      <div class="k-hero-title">{{ title }}</div>
-      <div class="k-hero-sub">{{ subtitle }}</div>
+      <div class="k-hero-title">
+        {{ title }}
+      </div>
+      <div class="k-hero-sub">
+        {{ subtitle }}
+      </div>
     </div>
 
     <div class="column q-gutter-sm">
       <div class="k-hero-point">
-        <q-icon name="check_circle" size="20px" /> Emite boletas y facturas ante SUNAT
+        <q-icon
+          name="check_circle"
+          size="20px"
+        /> Emite boletas y facturas ante SUNAT
       </div>
       <div class="k-hero-point">
-        <q-icon name="check_circle" size="20px" /> Multiempresa, POS, inventario y caja
+        <q-icon
+          name="check_circle"
+          size="20px"
+        /> Multiempresa, POS, inventario y caja
       </div>
       <div class="k-hero-point">
-        <q-icon name="check_circle" size="20px" /> Reportes y comprobantes en tiempo real
+        <q-icon
+          name="check_circle"
+          size="20px"
+        /> Reportes y comprobantes en tiempo real
       </div>
     </div>
   </div>
@@ -35,12 +53,12 @@ defineProps<{ title: string; subtitle: string }>()
   min-height: 100vh;
   padding: 56px;
   color: #fff;
+  /* Fondo propio (sin hotlink a Unsplash: evita fuga de referrer y funciona offline). */
   background-color: #1e1b4b;
   background-image:
-    linear-gradient(135deg, rgba(23, 21, 59, 0.82), rgba(10, 10, 12, 0.92)),
-    url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1600&q=80');
-  background-size: cover;
-  background-position: center;
+    radial-gradient(900px 500px at 15% 0%, rgba(99, 102, 241, 0.45), transparent 60%),
+    radial-gradient(700px 500px at 90% 100%, rgba(59, 130, 246, 0.28), transparent 55%),
+    linear-gradient(135deg, #17153b, #0a0a0c);
 }
 .k-logo-sm {
   width: 40px;

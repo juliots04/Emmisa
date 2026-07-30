@@ -1,7 +1,9 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <div class="text-h5">Caja</div>
+      <div class="text-h5">
+        Caja
+      </div>
       <q-space />
       <q-btn
         v-if="active"
@@ -13,8 +15,13 @@
     </div>
 
     <!-- Sin caja abierta -->
-    <q-card v-if="!active && !loading" style="max-width: 420px">
-      <q-card-section class="text-h6">Abrir caja</q-card-section>
+    <q-card
+      v-if="!active && !loading"
+      style="max-width: 420px"
+    >
+      <q-card-section class="text-h6">
+        Abrir caja
+      </q-card-section>
       <q-card-section>
         <q-input
           v-model.number="montoInicial"
@@ -42,41 +49,64 @@
         <div class="col-12 col-sm-3">
           <q-card>
             <q-card-section>
-              <div class="text-caption">Monto inicial</div>
-              <div class="text-h6">S/ {{ toMoney(active.monto_inicial) }}</div>
+              <div class="text-caption">
+                Monto inicial
+              </div>
+              <div class="text-h6">
+                S/ {{ toMoney(active.monto_inicial) }}
+              </div>
             </q-card-section>
           </q-card>
         </div>
         <div class="col-12 col-sm-3">
           <q-card>
             <q-card-section>
-              <div class="text-caption">Ingresos</div>
-              <div class="text-h6 text-positive">S/ {{ toMoney(ingresos) }}</div>
+              <div class="text-caption">
+                Ingresos
+              </div>
+              <div class="text-h6 text-positive">
+                S/ {{ toMoney(ingresos) }}
+              </div>
             </q-card-section>
           </q-card>
         </div>
         <div class="col-12 col-sm-3">
           <q-card>
             <q-card-section>
-              <div class="text-caption">Retiros</div>
-              <div class="text-h6 text-negative">S/ {{ toMoney(retiros) }}</div>
+              <div class="text-caption">
+                Retiros
+              </div>
+              <div class="text-h6 text-negative">
+                S/ {{ toMoney(retiros) }}
+              </div>
             </q-card-section>
           </q-card>
         </div>
         <div class="col-12 col-sm-3">
           <q-card>
             <q-card-section>
-              <div class="text-caption">Saldo esperado</div>
-              <div class="text-h6">S/ {{ toMoney(esperado) }}</div>
+              <div class="text-caption">
+                Saldo esperado
+              </div>
+              <div class="text-h6">
+                S/ {{ toMoney(esperado) }}
+              </div>
             </q-card-section>
           </q-card>
         </div>
       </div>
 
       <div class="row items-center q-mb-sm">
-        <div class="text-subtitle1">Movimientos</div>
+        <div class="text-subtitle1">
+          Movimientos
+        </div>
         <q-space />
-        <q-btn color="positive" icon="add" label="Ingreso" @click="openMovement('ingreso')" />
+        <q-btn
+          color="positive"
+          icon="add"
+          label="Ingreso"
+          @click="openMovement('ingreso')"
+        />
         <q-btn
           color="warning"
           icon="remove"
@@ -96,14 +126,22 @@
       >
         <template #body-cell-tipo="props">
           <q-td :props="props">
-            <q-badge :color="props.value === 'ingreso' ? 'positive' : 'warning'" :label="props.value" />
+            <q-badge
+              :color="props.value === 'ingreso' ? 'positive' : 'warning'"
+              :label="props.value"
+            />
           </q-td>
+        </template>
+        <template #loading>
+          <KTableSkeleton />
         </template>
       </q-table>
     </template>
 
     <!-- Historial de sesiones -->
-    <div class="text-subtitle1 q-mt-lg q-mb-sm">Historial de sesiones</div>
+    <div class="text-subtitle1 q-mt-lg q-mb-sm">
+      Historial de sesiones
+    </div>
     <q-table
       :rows="sessions"
       :columns="sessionColumns"
@@ -114,16 +152,33 @@
     >
       <template #body-cell-estado="props">
         <q-td :props="props">
-          <q-badge :color="props.value === 'abierta' ? 'positive' : 'grey'" :label="props.value" />
+          <q-badge
+            :color="props.value === 'abierta' ? 'positive' : 'grey'"
+            :label="props.value"
+          />
         </q-td>
+      </template>
+      <template #loading>
+        <KTableSkeleton />
       </template>
     </q-table>
 
     <!-- Diálogo movimiento -->
     <q-dialog v-model="showMovement">
-      <q-card style="min-width: 340px">
-        <q-card-section class="text-h6">
-          {{ movForm.tipo === 'ingreso' ? 'Registrar ingreso' : 'Registrar retiro' }}
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            {{ movForm.tipo === 'ingreso' ? 'Registrar ingreso' : 'Registrar retiro' }}
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
         </q-card-section>
         <q-card-section class="q-gutter-sm">
           <q-input
@@ -134,21 +189,50 @@
             :rules="montoRules"
             autofocus
           />
-          <q-input v-model="movForm.motivo" outlined label="Motivo" :rules="[required('Indica el motivo')]" />
+          <q-input
+            v-model="movForm.motivo"
+            outlined
+            label="Motivo"
+            :rules="[required('Indica el motivo')]"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="savingMov" @click="saveMovement" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="savingMov"
+            @click="saveMovement"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- Diálogo cierre -->
     <q-dialog v-model="showClose">
-      <q-card style="min-width: 360px">
-        <q-card-section class="text-h6">Cerrar caja</q-card-section>
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            Cerrar caja
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <div class="text-caption">Saldo esperado: S/ {{ toMoney(esperado) }}</div>
+          <div class="text-caption">
+            Saldo esperado: S/ {{ toMoney(esperado) }}
+          </div>
           <q-input
             v-model.number="montoFinal"
             type="number"
@@ -157,13 +241,25 @@
             :rules="montoCeroRules"
             autofocus
           />
-          <q-banner class="q-mt-sm text-white" :class="diffClass">
+          <q-banner
+            class="q-mt-sm text-white"
+            :class="diffClass"
+          >
             Diferencia: S/ {{ toMoney(diferenciaPreview) }}
           </q-banner>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="negative" label="Cerrar caja" :loading="closing" @click="cerrar" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="negative"
+            label="Cerrar caja"
+            :loading="closing"
+            @click="cerrar"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -173,7 +269,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { type QTableColumn } from 'quasar'
+import KTableSkeleton from '@/components/KTableSkeleton.vue'
 import { useCompanyStore } from '@/stores/company'
+import { useRealtime } from '@/lib/realtime'
 import {
   openSession,
   getOpenSession,
@@ -189,6 +287,10 @@ import { validate, required, montoRules, montoCeroRules } from '@/lib/validation
 import { notify } from '@/lib/toast'
 
 const company = useCompanyStore()
+// Realtime: apertura/cierre de caja (cash_sessions) y ventas del POS que mueven caja
+// (documents). `cash_movements` no tiene company_id, así que no se suscribe directo.
+useRealtime('cash_sessions', () => company.current?.id, () => { void load() })
+useRealtime('documents', () => company.current?.id, () => { void load() })
 
 const loading = ref(false)
 const opening = ref(false)
@@ -290,7 +392,7 @@ const sessionColumns: QTableColumn<CashSession>[] = [
 
 async function load() {
   if (!company.current) return
-  loading.value = true
+  loading.value = !sessions.value.length
   try {
     const companyId = company.current.id
     active.value = await getOpenSession(companyId)

@@ -6,12 +6,19 @@
           <!-- Panel de branding + beneficios -->
           <div class="k-reg-aside col-5 gt-sm column justify-between">
             <div class="row items-center q-gutter-sm">
-              <img class="k-reg-logo" src="/brand/badge.svg" alt="" aria-hidden="true" />
+              <img
+                class="k-reg-logo"
+                src="/brand/badge.svg"
+                alt=""
+                aria-hidden="true"
+              >
               <span class="k-reg-brand">Emmisa</span>
             </div>
 
             <div>
-              <div class="k-reg-headline">Empieza a facturar hoy.</div>
+              <div class="k-reg-headline">
+                Empieza a facturar hoy.
+              </div>
               <div class="k-reg-sub">
                 Crea tu cuenta gratis y emite tu primer comprobante en minutos.
               </div>
@@ -19,21 +26,34 @@
 
             <div class="column q-gutter-md">
               <div class="k-reg-point">
-                <q-icon name="check_circle" size="18px" /> Boletas y facturas válidas ante SUNAT
+                <q-icon
+                  name="check_circle"
+                  size="18px"
+                /> Boletas y facturas válidas ante SUNAT
               </div>
               <div class="k-reg-point">
-                <q-icon name="check_circle" size="18px" /> POS, inventario, caja y reportes
+                <q-icon
+                  name="check_circle"
+                  size="18px"
+                /> POS, inventario, caja y reportes
               </div>
               <div class="k-reg-point">
-                <q-icon name="check_circle" size="18px" /> Gratis para empezar · sin tarjeta
+                <q-icon
+                  name="check_circle"
+                  size="18px"
+                /> Gratis para empezar · sin tarjeta
               </div>
             </div>
           </div>
 
           <!-- Panel del formulario -->
           <div class="col column justify-center k-reg-form">
-            <div class="text-h5 text-weight-bold">Crea tu cuenta</div>
-            <div class="k-reg-muted text-caption q-mb-lg">Regístrate en segundos</div>
+            <div class="text-h5 text-weight-bold">
+              Crea tu cuenta
+            </div>
+            <div class="k-reg-muted text-caption q-mb-lg">
+              Regístrate en segundos
+            </div>
 
             <q-form @submit.prevent="submit">
               <q-input
@@ -53,12 +73,33 @@
                 hint="Mínimo 6 caracteres"
                 :rules="passwordRules"
               />
+              <q-checkbox
+                v-model="acepta"
+                class="q-mb-md k-reg-consent"
+                size="sm"
+              >
+                <span class="text-caption">
+                  Acepto los
+                  <router-link
+                    :to="{ name: 'terminos' }"
+                    target="_blank"
+                    class="k-reg-link"
+                  >Términos y Condiciones</router-link>
+                  y la
+                  <router-link
+                    :to="{ name: 'privacidad' }"
+                    target="_blank"
+                    class="k-reg-link"
+                  >Política de Privacidad</router-link>.
+                </span>
+              </q-checkbox>
               <q-btn
                 type="submit"
                 unelevated
                 color="primary"
                 size="lg"
                 class="full-width"
+                :disable="!acepta"
                 :loading="loading"
                 label="Registrarme"
               />
@@ -83,7 +124,14 @@
 
             <div class="text-center q-mt-lg text-caption k-reg-muted">
               ¿Ya tienes cuenta?
-              <q-btn flat dense no-caps color="primary" label="Inicia sesión" :to="{ name: 'login' }" />
+              <q-btn
+                flat
+                dense
+                no-caps
+                color="primary"
+                label="Inicia sesión"
+                :to="{ name: 'login' }"
+              />
             </div>
           </div>
         </q-card>
@@ -98,12 +146,14 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { required, emailRules, validate, type Rule } from '@/lib/validation'
 import { notify } from '@/lib/toast'
+import { authErrorMessage } from '@/lib/authErrors'
 
 const auth = useAuthStore()
 const router = useRouter()
 
 const email = ref('')
 const password = ref('')
+const acepta = ref(false)
 const loading = ref(false)
 const googleLoading = ref(false)
 
@@ -118,7 +168,7 @@ async function loginGoogle() {
   try {
     await auth.signInWithGoogle()
   } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
+    notify({ type: 'negative', message: authErrorMessage(e) })
     googleLoading.value = false
   }
 }
@@ -132,6 +182,10 @@ async function submit() {
     notify({ type: 'warning', message: err })
     return
   }
+  if (!acepta.value) {
+    notify({ type: 'warning', message: 'Debes aceptar los Términos y la Política de Privacidad' })
+    return
+  }
   loading.value = true
   try {
     const { needsVerification } = await auth.signUp(email.value, password.value)
@@ -141,7 +195,7 @@ async function submit() {
     }
     if (auth.user) router.push({ name: 'dashboard' })
   } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
+    notify({ type: 'negative', message: authErrorMessage(e) })
   } finally {
     loading.value = false
   }
@@ -152,12 +206,12 @@ async function submit() {
 /* Fondo: la imagen, con un velo oscuro para que el vidrio se lea */
 .k-register {
   min-height: 100vh;
+  /* Fondo propio (sin hotlink a Unsplash: evita fuga de referrer y funciona offline). */
   background-color: #0b0b14;
   background-image:
-    linear-gradient(rgba(8, 8, 14, 0.68), rgba(8, 8, 14, 0.82)),
-    url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=1600&q=80');
-  background-size: cover;
-  background-position: center;
+    radial-gradient(1200px 600px at 18% -10%, rgba(99, 102, 241, 0.28), transparent 60%),
+    radial-gradient(900px 520px at 100% 110%, rgba(99, 102, 241, 0.18), transparent 55%),
+    linear-gradient(160deg, #0b0b14, #12121f);
 }
 
 /* Tarjeta de vidrio (glassmorphism): la imagen se ve a través */
@@ -249,7 +303,16 @@ async function submit() {
 .k-reg-card :deep(.q-field__native) {
   color: rgba(255, 255, 255, 0.9);
 }
-.k-reg-card :deep(.q-field__messages) {
-  color: rgba(255, 255, 255, 0.5);
+/* Solo los HINTS llevan color claro; los mensajes de ERROR conservan el rojo de
+   Quasar (antes este override los pintaba blancos y se perdía el significado). */
+.k-reg-card :deep(.q-field:not(.q-field--error) .q-field__messages) {
+  color: rgba(255, 255, 255, 0.75);
+}
+.k-reg-consent {
+  color: rgba(255, 255, 255, 0.82);
+}
+.k-reg-link {
+  color: #c7d2fe;
+  text-decoration: underline;
 }
 </style>

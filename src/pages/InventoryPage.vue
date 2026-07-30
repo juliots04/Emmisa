@@ -1,10 +1,15 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <div class="text-h5">Inventario</div>
+      <div class="text-h5">
+        Inventario
+      </div>
     </div>
 
-    <q-card flat bordered>
+    <q-card
+      flat
+      bordered
+    >
       <q-tabs
         v-model="tab"
         align="left"
@@ -12,15 +17,31 @@
         indicator-color="primary"
         class="text-muted"
       >
-        <q-tab name="stock" label="Stock" />
-        <q-tab name="movimientos" label="Movimientos" />
-        <q-tab name="categorias" label="Categorías" />
-        <q-tab name="almacenes" label="Almacenes" />
+        <q-tab
+          name="stock"
+          label="Stock"
+        />
+        <q-tab
+          name="movimientos"
+          label="Movimientos"
+        />
+        <q-tab
+          name="categorias"
+          label="Categorías"
+        />
+        <q-tab
+          name="almacenes"
+          label="Almacenes"
+        />
       </q-tabs>
 
       <q-separator />
 
-      <q-tab-panels v-model="tab" animated class="bg-transparent">
+      <q-tab-panels
+        v-model="tab"
+        animated
+        class="bg-transparent"
+      >
         <!-- ==================== STOCK ==================== -->
         <q-tab-panel name="stock">
           <q-table
@@ -30,14 +51,23 @@
             :loading="loadingStock"
             flat
             bordered
-          />
+          >
+            <template #loading>
+              <KTableSkeleton />
+            </template>
+          </q-table>
         </q-tab-panel>
 
         <!-- ==================== MOVIMIENTOS ==================== -->
         <q-tab-panel name="movimientos">
           <div class="row items-center q-mb-md">
             <q-space />
-            <q-btn color="primary" icon="add" label="Registrar movimiento" @click="openMovement" />
+            <q-btn
+              color="primary"
+              icon="add"
+              label="Registrar movimiento"
+              @click="openMovement"
+            />
           </div>
           <q-table
             :rows="movements"
@@ -46,14 +76,23 @@
             :loading="loadingMovements"
             flat
             bordered
-          />
+          >
+            <template #loading>
+              <KTableSkeleton />
+            </template>
+          </q-table>
         </q-tab-panel>
 
         <!-- ==================== CATEGORÍAS ==================== -->
         <q-tab-panel name="categorias">
           <div class="row items-center q-mb-md">
             <q-space />
-            <q-btn color="primary" icon="add" label="Nueva categoría" @click="openCategory" />
+            <q-btn
+              color="primary"
+              icon="add"
+              label="Nueva categoría"
+              @click="openCategory"
+            />
           </div>
           <q-table
             :rows="categories"
@@ -62,14 +101,23 @@
             :loading="loadingCategories"
             flat
             bordered
-          />
+          >
+            <template #loading>
+              <KTableSkeleton />
+            </template>
+          </q-table>
         </q-tab-panel>
 
         <!-- ==================== ALMACENES ==================== -->
         <q-tab-panel name="almacenes">
           <div class="row items-center q-mb-md">
             <q-space />
-            <q-btn color="primary" icon="add" label="Nuevo almacén" @click="openWarehouse" />
+            <q-btn
+              color="primary"
+              icon="add"
+              label="Nuevo almacén"
+              @click="openWarehouse"
+            />
           </div>
           <q-table
             :rows="warehouses"
@@ -78,15 +126,32 @@
             :loading="loadingWarehouses"
             flat
             bordered
-          />
+          >
+            <template #loading>
+              <KTableSkeleton />
+            </template>
+          </q-table>
         </q-tab-panel>
       </q-tab-panels>
     </q-card>
 
     <!-- ==================== Diálogo: registrar movimiento ==================== -->
     <q-dialog v-model="showMovement">
-      <q-card style="min-width: 360px">
-        <q-card-section class="text-h6">Registrar movimiento</q-card-section>
+      <q-card class="k-dialog-md">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            Registrar movimiento
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
           <q-select
             v-model="movForm.productId"
@@ -96,7 +161,7 @@
             map-options
             label="Producto"
             :rules="[required('Selecciona un producto')]"
-            lazy-rules
+            lazy-rules="ondemand"
           />
           <q-select
             v-model="movForm.warehouseId"
@@ -106,7 +171,7 @@
             map-options
             label="Almacén"
             :rules="[required('Selecciona un almacén')]"
-            lazy-rules
+            lazy-rules="ondemand"
           />
           <q-select
             v-model="movForm.tipo"
@@ -120,43 +185,117 @@
             v-model.number="movForm.cantidad"
             outlined
             type="number"
-            label="Cantidad"
+            :label="movForm.tipo === 'ajuste' ? 'Cantidad final (conteo físico)' : 'Cantidad'"
+            :hint="movForm.tipo === 'ajuste'
+              ? 'Ajuste FIJA el stock a esta cantidad total (no suma ni resta).'
+              : movForm.tipo === 'ingreso' ? 'Se SUMA al stock actual.' : 'Se RESTA del stock actual.'"
             :rules="qtyRules"
-            lazy-rules
+            lazy-rules="ondemand"
           />
-          <q-input v-model="movForm.motivo" outlined label="Motivo" />
+          <q-input
+            v-model="movForm.motivo"
+            outlined
+            label="Motivo"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="savingMovement" @click="saveMovement" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="savingMovement"
+            @click="saveMovement"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- ==================== Diálogo: nueva categoría ==================== -->
     <q-dialog v-model="showCategory">
-      <q-card style="min-width: 340px">
-        <q-card-section class="text-h6">Nueva categoría</q-card-section>
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            Nueva categoría
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-input v-model="categoryName" outlined label="Nombre" autofocus :rules="nameRules" lazy-rules />
+          <q-input
+            v-model="categoryName"
+            outlined
+            label="Nombre"
+            autofocus
+            :rules="nameRules"
+            lazy-rules="ondemand"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="savingCategory" @click="saveCategory" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="savingCategory"
+            @click="saveCategory"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- ==================== Diálogo: nuevo almacén ==================== -->
     <q-dialog v-model="showWarehouse">
-      <q-card style="min-width: 340px">
-        <q-card-section class="text-h6">Nuevo almacén</q-card-section>
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            Nuevo almacén
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-input v-model="warehouseName" outlined label="Nombre" autofocus :rules="nameRules" lazy-rules />
+          <q-input
+            v-model="warehouseName"
+            outlined
+            label="Nombre"
+            autofocus
+            :rules="nameRules"
+            lazy-rules="ondemand"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="savingWarehouse" @click="saveWarehouse" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="savingWarehouse"
+            @click="saveWarehouse"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -166,8 +305,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { type QTableColumn } from 'quasar'
+import KTableSkeleton from '@/components/KTableSkeleton.vue'
 import { notify } from '@/lib/toast'
 import { useCompanyStore } from '@/stores/company'
+import { useRealtime } from '@/lib/realtime'
 import { required, qtyRules, nameRules, validate } from '@/lib/validation'
 import {
   listCategories,
@@ -187,6 +328,13 @@ import {
 } from '@/modules/inventory/inventory.api'
 
 const company = useCompanyStore()
+// Realtime: refresca stock y movimientos al vender/comprar o ajustar inventario.
+// `stock` no tiene company_id → se refresca vía inventory_movements y ventas (documents).
+useRealtime('inventory_movements', () => company.current?.id, () => {
+  void loadStock()
+  void loadMovements()
+})
+useRealtime('documents', () => company.current?.id, () => { void loadStock() })
 
 const tab = ref<'stock' | 'movimientos' | 'categorias' | 'almacenes'>('stock')
 
@@ -221,9 +369,9 @@ const warehouseOptions = computed(() =>
   warehouses.value.map((w) => ({ label: w.nombre, value: w.id })),
 )
 const tipoOptions: { label: string; value: MovementType }[] = [
-  { label: 'Ingreso', value: 'ingreso' },
-  { label: 'Salida', value: 'salida' },
-  { label: 'Ajuste', value: 'ajuste' },
+  { label: 'Ingreso (+)', value: 'ingreso' },
+  { label: 'Salida (−)', value: 'salida' },
+  { label: 'Ajuste (fija el total)', value: 'ajuste' },
 ]
 
 // ---- Columnas ----
@@ -318,7 +466,7 @@ function openWarehouse() {
 // ---- Cargas ----
 async function loadStock() {
   if (!company.current) return
-  loadingStock.value = true
+  loadingStock.value = !stockRows.value.length
   try {
     stockRows.value = await listStock(company.current.id)
   } catch (e) {
@@ -330,7 +478,7 @@ async function loadStock() {
 
 async function loadMovements() {
   if (!company.current) return
-  loadingMovements.value = true
+  loadingMovements.value = !movements.value.length
   try {
     movements.value = await listMovements(company.current.id)
   } catch (e) {
@@ -342,7 +490,7 @@ async function loadMovements() {
 
 async function loadCategories() {
   if (!company.current) return
-  loadingCategories.value = true
+  loadingCategories.value = !categories.value.length
   try {
     categories.value = await listCategories(company.current.id)
   } catch (e) {
@@ -354,7 +502,7 @@ async function loadCategories() {
 
 async function loadWarehouses() {
   if (!company.current) return
-  loadingWarehouses.value = true
+  loadingWarehouses.value = !warehouses.value.length
   try {
     warehouses.value = await listWarehouses(company.current.id)
   } catch (e) {
@@ -413,7 +561,7 @@ async function saveCategory() {
   }
   savingCategory.value = true
   try {
-    await createCategory(company.current.id, categoryName.value.trim())
+    await createCategory(company.current.id, { nombre: categoryName.value.trim() })
     showCategory.value = false
     await loadCategories()
     notify({ type: 'positive', message: 'Categoría creada' })

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { cachedQuery } from '@/stores/queryCache'
 import type { Customer, DocumentRow } from '@/types'
 
 /**
@@ -33,34 +34,40 @@ export interface DocumentDetail {
  * El aislamiento por empresa lo garantiza el RLS en la base de datos.
  */
 export async function getDocumentDetail(id: string): Promise<DocumentDetail> {
-  const { data: doc, error } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('id', id)
-    .single()
-  if (error) throw error
-  const document = doc as DocumentRow
+  return cachedQuery(
+    ['document-detail', id],
+    ['documents', 'document_items', 'customers'],
+    async () => {
+      const { data: doc, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', id)
+        .single()
+      if (error) throw error
+      const document = doc as DocumentRow
 
-  const { data: items, error: itemsError } = await supabase
-    .from('document_items')
-    .select('*')
-    .eq('document_id', id)
-  if (itemsError) throw itemsError
+      const { data: items, error: itemsError } = await supabase
+        .from('document_items')
+        .select('*')
+        .eq('document_id', id)
+      if (itemsError) throw itemsError
 
-  let customer: Customer | null = null
-  if (document.customer_id) {
-    const { data: cust, error: custError } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('id', document.customer_id)
-      .maybeSingle()
-    if (custError) throw custError
-    customer = (cust as Customer | null) ?? null
-  }
+      let customer: Customer | null = null
+      if (document.customer_id) {
+        const { data: cust, error: custError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', document.customer_id)
+          .maybeSingle()
+        if (custError) throw custError
+        customer = (cust as Customer | null) ?? null
+      }
 
-  return {
-    document,
-    items: (items ?? []) as DocumentItemRow[],
-    customer,
-  }
+      return {
+        document,
+        items: (items ?? []) as DocumentItemRow[],
+        customer,
+      }
+    },
+  )
 }

@@ -70,7 +70,9 @@ export const onlyDigits =
 /** RUC peruano: 11 dígitos, prefijo válido y dígito verificador (módulo 11). */
 export function isValidRuc(ruc: string): boolean {
   if (!/^\d{11}$/.test(ruc)) return false
-  if (!['10', '15', '17', '20'].includes(ruc.slice(0, 2))) return false
+  // Prefijos de RUC válidos en Perú: 10 (persona natural), 15/16/17 (transición/no
+   // domiciliados), 20 (persona jurídica). Antes faltaba el 16 → rechazaba RUC legítimos.
+  if (!['10', '15', '16', '17', '20'].includes(ruc.slice(0, 2))) return false
   const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
   let sum = 0
   for (let i = 0; i < 10; i++) sum += Number(ruc[i]) * weights[i]

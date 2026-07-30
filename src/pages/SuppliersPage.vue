@@ -1,31 +1,108 @@
 <template>
   <q-page class="q-pa-md">
-    <div class="row items-center q-mb-md">
-      <div class="text-h5">Proveedores</div>
-      <q-space />
-      <q-btn color="primary" icon="add" label="Nuevo" @click="openNew" />
-    </div>
+    <KModuleHeader
+      title="Proveedores"
+      subtitle="Directorio de proveedores de tu empresa"
+      :refresh-fn="load"
+      new-label="Nuevo"
+      show-import
+      show-export
+      @new="openNew"
+      @export="onExport"
+    />
 
-    <q-table :rows="rows" :columns="columns" row-key="id" :loading="loading" flat bordered>
+    <q-table
+      :rows="rows"
+      :columns="columns"
+      row-key="id"
+      :loading="loading"
+      flat
+      bordered
+    >
       <template #body-cell-acciones="props">
-        <q-td :props="props" class="text-right">
-          <q-btn flat round dense icon="edit" size="sm" @click="openEdit(props.row)" />
-          <q-btn flat round dense icon="delete" size="sm" color="negative" @click="remove(props.row)" />
+        <q-td
+          :props="props"
+          class="text-right"
+        >
+          <q-btn
+            flat
+            round
+            dense
+            icon="edit"
+            size="sm"
+            @click="openEdit(props.row)"
+          />
+          <q-btn
+            flat
+            round
+            dense
+            icon="delete"
+            size="sm"
+            color="negative"
+            @click="remove(props.row)"
+          />
         </q-td>
+      </template>
+      <template #loading>
+        <KTableSkeleton />
       </template>
     </q-table>
 
     <q-dialog v-model="show">
-      <q-card style="min-width: 340px">
-        <q-card-section class="text-h6">{{ editingId ? 'Editar proveedor' : 'Nuevo proveedor' }}</q-card-section>
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            {{ editingId ? 'Editar proveedor' : 'Nuevo proveedor' }}
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-input v-model="form.razon_social" outlined label="Razón social" autofocus :rules="nameRules" lazy-rules hide-bottom-space />
-          <q-input v-model="form.ruc" outlined label="RUC" :rules="rucRules" lazy-rules hide-bottom-space />
-          <q-input v-model="form.contacto" outlined label="Contacto" :rules="[maxLen(120)]" lazy-rules hide-bottom-space />
+          <q-input
+            v-model="form.razon_social"
+            outlined
+            label="Razón social"
+            autofocus
+            :rules="nameRules"
+            lazy-rules="ondemand"
+            hide-bottom-space
+          />
+          <q-input
+            v-model="form.ruc"
+            outlined
+            label="RUC"
+            :rules="rucRules"
+            lazy-rules="ondemand"
+            hide-bottom-space
+          />
+          <q-input
+            v-model="form.contacto"
+            outlined
+            label="Contacto"
+            :rules="[maxLen(120)]"
+            lazy-rules="ondemand"
+            hide-bottom-space
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="saving" @click="save" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="saving"
+            @click="save"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -36,6 +113,10 @@
 import { onMounted, ref } from 'vue'
 import { useQuasar, type QTableColumn } from 'quasar'
 import { useCompanyStore } from '@/stores/company'
+import { useRealtime } from '@/lib/realtime'
+import KTableSkeleton from '@/components/KTableSkeleton.vue'
+import KModuleHeader from '@/components/KModuleHeader.vue'
+import { exportTableXls } from '@/lib/exportTable'
 import {
   listSuppliers,
   createSupplier,
@@ -48,6 +129,8 @@ import { notify } from '@/lib/toast'
 
 const $q = useQuasar()
 const company = useCompanyStore()
+// Realtime: refresca al crear/editar/eliminar proveedores.
+useRealtime('suppliers', () => company.current?.id, () => { void load() })
 const rows = ref<Supplier[]>([])
 const loading = ref(false)
 const show = ref(false)
@@ -91,9 +174,13 @@ function remove(row: Supplier) {
   })
 }
 
+function onExport() {
+  exportTableXls('proveedores', columns, rows.value)
+}
+
 async function load() {
   if (!company.current) return
-  loading.value = true
+  loading.value = !rows.value.length
   try {
     rows.value = await listSuppliers(company.current.id)
   } catch (e) {

@@ -2,17 +2,31 @@
   <q-layout view="lHh Lpr lFf">
     <q-page-container>
       <q-page class="flex flex-center q-pa-md">
-        <q-card style="width: 380px" class="q-pa-lg">
+        <q-card
+          style="width: 380px"
+          class="q-pa-lg"
+        >
           <q-card-section class="text-center q-pb-md">
-            <img class="k-logo q-mx-auto q-mb-md" src="/brand/badge.svg" alt="Emmisa" />
-            <div class="text-h5 text-weight-bold">Verifica tu correo</div>
+            <img
+              class="k-logo q-mx-auto q-mb-md"
+              src="/brand/badge.svg"
+              alt="Emmisa"
+            >
+            <div class="text-h5 text-weight-bold">
+              Verifica tu correo
+            </div>
             <div class="text-caption text-muted q-mt-xs">
               Ingresa el código que enviamos a
-              <div class="text-weight-medium q-mt-xs">{{ email || 'tu correo' }}</div>
+              <div class="text-weight-medium q-mt-xs">
+                {{ email || 'tu correo' }}
+              </div>
             </div>
           </q-card-section>
 
-          <q-form class="q-gutter-md" @submit.prevent="verify">
+          <q-form
+            class="q-gutter-md"
+            @submit.prevent="verify"
+          >
             <q-input
               v-model="code"
               outlined
@@ -46,7 +60,14 @@
               @click="resend"
             />
             <div>
-              <q-btn flat dense no-caps color="grey" label="Volver" :to="{ name: 'login' }" />
+              <q-btn
+                flat
+                dense
+                no-caps
+                color="grey"
+                label="Volver"
+                :to="{ name: 'login' }"
+              />
             </div>
           </q-card-section>
         </q-card>
@@ -61,6 +82,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validate, required, onlyDigits, exactLen } from '@/lib/validation'
 import { notify } from '@/lib/toast'
+import { authErrorMessage } from '@/lib/authErrors'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -89,7 +111,7 @@ async function verify() {
     notify({ type: 'positive', message: 'Correo verificado' })
     router.push({ name: 'dashboard' })
   } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
+    notify({ type: 'negative', message: authErrorMessage(e) })
   } finally {
     loading.value = false
   }
@@ -102,7 +124,7 @@ async function resend() {
     await auth.resendSignupCode(email.value)
     notify({ type: 'info', message: 'Código reenviado a tu correo' })
   } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
+    notify({ type: 'negative', message: authErrorMessage(e) })
   } finally {
     resending.value = false
   }

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { cachedQuery, invalidateQueryCache } from '@/stores/queryCache'
 
 export interface Receivable {
   id: string
@@ -12,9 +13,17 @@ export interface Receivable {
 
 /** Cuentas por cobrar (comprobantes con saldo pendiente), agregadas en el servidor. */
 export async function listReceivables(companyId: string): Promise<Receivable[]> {
-  const { data, error } = await supabase.rpc('reporte_cuentas_por_cobrar', { p_company_id: companyId })
-  if (error) throw error
-  return (data ?? []) as Receivable[]
+  return cachedQuery(
+    ['receivables', companyId],
+    ['receivables', `company:${companyId}`],
+    async () => {
+      const { data, error } = await supabase.rpc('reporte_cuentas_por_cobrar', {
+        p_company_id: companyId,
+      })
+      if (error) throw error
+      return (data ?? []) as Receivable[]
+    },
+  )
 }
 
 /** Registra un abono (cobro) a un comprobante; devuelve el nuevo saldo. */
@@ -36,5 +45,6 @@ export async function registrarAbono(input: {
     p_cash_session_id: input.cashSessionId ?? null,
   })
   if (error) throw error
+  invalidateQueryCache()
   return data as { tipo: string; saldo: number }
 }

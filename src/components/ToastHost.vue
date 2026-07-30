@@ -1,6 +1,12 @@
 <template>
   <Teleport to="body">
-    <div ref="region" class="k-toast-region" role="region" aria-live="polite" aria-label="Notificaciones">
+    <div
+      ref="region"
+      class="k-toast-region"
+      role="region"
+      aria-live="polite"
+      aria-label="Notificaciones"
+    >
       <TransitionGroup
         tag="div"
         class="k-toast-stack"
@@ -19,14 +25,31 @@
         >
           <span class="k-toast-accent k-fx" />
           <span class="k-toast-icon-wrap k-fx">
-            <q-icon :name="t.icon" size="20px" />
+            <q-icon
+              :name="t.icon"
+              size="20px"
+            />
           </span>
           <div class="k-toast-body k-fx">
-            <div class="k-toast-msg">{{ t.message }}</div>
-            <div v-if="t.caption" class="k-toast-caption">{{ t.caption }}</div>
+            <div class="k-toast-msg">
+              {{ t.message }}
+            </div>
+            <div
+              v-if="t.caption"
+              class="k-toast-caption"
+            >
+              {{ t.caption }}
+            </div>
           </div>
-          <button class="k-toast-close k-fx" aria-label="Cerrar" @click="dismiss(t.id)">
-            <q-icon name="close" size="15px" />
+          <button
+            class="k-toast-close k-fx"
+            aria-label="Cerrar"
+            @click="dismiss(t.id)"
+          >
+            <q-icon
+              name="close"
+              size="15px"
+            />
           </button>
           <span
             v-if="t.timeout > 0"

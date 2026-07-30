@@ -1,41 +1,105 @@
 <template>
   <q-page class="q-pa-md">
     <div class="row items-center q-mb-md">
-      <div class="text-h5">Panel del revendedor</div>
+      <div class="text-h5">
+        Panel del revendedor
+      </div>
       <q-space />
-      <q-chip v-if="reseller" color="primary" text-color="white" icon="storefront" :label="reseller.nombre" />
+      <q-chip
+        v-if="reseller"
+        color="primary"
+        text-color="white"
+        icon="storefront"
+        :label="reseller.nombre"
+      />
     </div>
 
     <!-- Sin revendedor: crear -->
-    <q-card v-if="!reseller" class="q-pa-md">
-      <div class="text-h6 q-mb-sm">Activa tu marca blanca</div>
+    <q-card
+      v-if="!reseller"
+      class="q-pa-md"
+    >
+      <div class="text-h6 q-mb-sm">
+        Activa tu marca blanca
+      </div>
       <div class="text-body2 text-grey-7 q-mb-md">
         Crea tu revendedor para gestionar varias empresas emisoras bajo tu marca,
         con tus planes y tu branding.
       </div>
       <div class="row q-col-gutter-sm">
-        <q-input v-model="newReseller.nombre" outlined dense label="Nombre comercial" class="col-12 col-sm-5" />
-        <q-input v-model="newReseller.dominio" outlined dense label="Dominio (opcional)" class="col-12 col-sm-5" />
+        <q-input
+          v-model="newReseller.nombre"
+          outlined
+          dense
+          label="Nombre comercial"
+          class="col-12 col-sm-5"
+        />
+        <q-input
+          v-model="newReseller.dominio"
+          outlined
+          dense
+          label="Dominio (opcional)"
+          class="col-12 col-sm-5"
+        />
         <div class="col-12 col-sm-2">
-          <q-btn color="primary" label="Crear" class="full-width" :loading="creating" @click="doCreateReseller" />
+          <q-btn
+            color="primary"
+            label="Crear"
+            class="full-width"
+            :loading="creating"
+            @click="doCreateReseller"
+          />
         </div>
       </div>
     </q-card>
 
     <template v-else>
-      <q-tabs v-model="tab" align="left" class="text-primary q-mb-md" dense>
-        <q-tab name="empresas" label="Empresas" icon="business" />
-        <q-tab name="planes" label="Planes" icon="workspace_premium" />
-        <q-tab name="suscripciones" label="Suscripciones" icon="event_repeat" />
-        <q-tab name="marca" label="Marca" icon="palette" />
+      <q-tabs
+        v-model="tab"
+        align="left"
+        class="text-primary q-mb-md"
+        dense
+      >
+        <q-tab
+          name="empresas"
+          label="Empresas"
+          icon="business"
+        />
+        <q-tab
+          name="planes"
+          label="Planes"
+          icon="workspace_premium"
+        />
+        <q-tab
+          name="suscripciones"
+          label="Suscripciones"
+          icon="event_repeat"
+        />
+        <q-tab
+          name="marca"
+          label="Marca"
+          icon="palette"
+        />
       </q-tabs>
 
-      <q-tab-panels v-model="tab" animated>
+      <q-tab-panels
+        v-model="tab"
+        animated
+      >
         <!-- ===== Empresas ===== -->
         <q-tab-panel name="empresas">
-          <q-table :rows="companies" :columns="companyCols" row-key="id" :loading="loading" flat bordered>
+          <q-table
+            :rows="companies"
+            :columns="companyCols"
+            row-key="id"
+            :loading="loading"
+            flat
+            bordered
+          >
             <template #top>
-              <div class="text-subtitle1">Empresas de tu marca ({{ companies.length }})</div>
+              <div class="text-subtitle1">
+                Empresas de tu marca ({{ companies.length }})
+              </div>
               <q-space />
               <q-select
                 v-if="unassigned.length"
@@ -50,21 +114,51 @@
                 @update:model-value="doAssign"
               />
             </template>
+            <template #loading>
+              <KTableSkeleton />
+            </template>
           </q-table>
         </q-tab-panel>
 
         <!-- ===== Planes ===== -->
         <q-tab-panel name="planes">
           <div class="row items-center q-mb-sm">
-            <div class="text-subtitle1">Planes</div>
+            <div class="text-subtitle1">
+              Planes
+            </div>
             <q-space />
-            <q-btn color="primary" icon="add" label="Nuevo plan" @click="showPlan = true" />
+            <q-btn
+              color="primary"
+              icon="add"
+              label="Nuevo plan"
+              @click="showPlan = true"
+            />
           </div>
-          <q-table :rows="plans" :columns="planCols" row-key="id" :loading="loading" flat bordered>
+          <q-table
+            :rows="plans"
+            :columns="planCols"
+            row-key="id"
+            :loading="loading"
+            flat
+            bordered
+          >
             <template #body-cell-acciones="props">
-              <q-td :props="props" class="text-right">
-                <q-btn flat round dense icon="delete" color="negative" @click="doDeletePlan(props.row.id)" />
+              <q-td
+                :props="props"
+                class="text-right"
+              >
+                <q-btn
+                  flat
+                  round
+                  dense
+                  icon="delete"
+                  color="negative"
+                  @click="doDeletePlan(props.row.id)"
+                />
               </q-td>
+            </template>
+            <template #loading>
+              <KTableSkeleton />
             </template>
           </q-table>
         </q-tab-panel>
@@ -72,39 +166,115 @@
         <!-- ===== Suscripciones ===== -->
         <q-tab-panel name="suscripciones">
           <div class="row items-center q-mb-sm">
-            <div class="text-subtitle1">Suscripciones</div>
+            <div class="text-subtitle1">
+              Suscripciones
+            </div>
             <q-space />
-            <q-btn color="primary" icon="add" label="Nueva suscripción" :disable="!plans.length || !companies.length" @click="showSub = true" />
+            <q-btn
+              color="primary"
+              icon="add"
+              label="Nueva suscripción"
+              :disable="!plans.length || !companies.length"
+              @click="showSub = true"
+            />
           </div>
-          <q-table :rows="subsView" :columns="subCols" row-key="id" :loading="loading" flat bordered>
+          <q-table
+            :rows="subsView"
+            :columns="subCols"
+            row-key="id"
+            :loading="loading"
+            flat
+            bordered
+          >
             <template #body-cell-acciones="props">
-              <q-td :props="props" class="text-right">
-                <q-btn-dropdown flat dense label="Estado" size="sm">
+              <q-td
+                :props="props"
+                class="text-right"
+              >
+                <q-btn-dropdown
+                  flat
+                  dense
+                  label="Estado"
+                  size="sm"
+                >
                   <q-list>
-                    <q-item v-for="e in ['activa', 'suspendida', 'vencida', 'cancelada']" :key="e" v-close-popup clickable @click="doSetEstado(props.row.id, e)">
+                    <q-item
+                      v-for="e in ['activa', 'suspendida', 'vencida', 'cancelada']"
+                      :key="e"
+                      v-close-popup
+                      clickable
+                      @click="doSetEstado(props.row.id, e)"
+                    >
                       <q-item-section>{{ e }}</q-item-section>
                     </q-item>
                   </q-list>
                 </q-btn-dropdown>
               </q-td>
             </template>
+            <template #loading>
+              <KTableSkeleton />
+            </template>
           </q-table>
         </q-tab-panel>
 
         <!-- ===== Marca ===== -->
         <q-tab-panel name="marca">
-          <div class="text-subtitle1 q-mb-sm">Branding de tu marca</div>
-          <div class="row q-col-gutter-md" style="max-width: 640px">
-            <q-input v-model="branding.nombre_comercial" outlined dense label="Nombre comercial" class="col-12 col-sm-6" />
-            <q-input v-model="branding.logo_url" outlined dense label="URL del logo" class="col-12 col-sm-6" />
-            <q-input v-model="branding.color_primario" outlined dense label="Color primario" class="col-12 col-sm-6">
-              <template #append><input v-model="branding.color_primario" type="color" /></template>
+          <div class="text-subtitle1 q-mb-sm">
+            Branding de tu marca
+          </div>
+          <div
+            class="row q-col-gutter-md"
+            style="max-width: 640px"
+          >
+            <q-input
+              v-model="branding.nombre_comercial"
+              outlined
+              dense
+              label="Nombre comercial"
+              class="col-12 col-sm-6"
+            />
+            <q-input
+              v-model="branding.logo_url"
+              outlined
+              dense
+              label="URL del logo"
+              class="col-12 col-sm-6"
+            />
+            <q-input
+              v-model="branding.color_primario"
+              outlined
+              dense
+              label="Color primario"
+              class="col-12 col-sm-6"
+            >
+              <template #append>
+                <input
+                  v-model="branding.color_primario"
+                  type="color"
+                >
+              </template>
             </q-input>
-            <q-input v-model="branding.color_secundario" outlined dense label="Color secundario" class="col-12 col-sm-6">
-              <template #append><input v-model="branding.color_secundario" type="color" /></template>
+            <q-input
+              v-model="branding.color_secundario"
+              outlined
+              dense
+              label="Color secundario"
+              class="col-12 col-sm-6"
+            >
+              <template #append>
+                <input
+                  v-model="branding.color_secundario"
+                  type="color"
+                >
+              </template>
             </q-input>
             <div class="col-12 text-right">
-              <q-btn color="primary" label="Guardar marca" :loading="savingBrand" @click="doSaveBranding" />
+              <q-btn
+                color="primary"
+                label="Guardar marca"
+                :loading="savingBrand"
+                @click="doSaveBranding"
+              />
             </div>
           </div>
         </q-tab-panel>
@@ -113,40 +283,149 @@
 
     <!-- Diálogo: nuevo plan -->
     <q-dialog v-model="showPlan">
-      <q-card style="min-width: 360px">
-        <q-card-section class="text-h6">Nuevo plan</q-card-section>
-        <q-card-section class="q-gutter-sm">
-          <q-input v-model="planForm.nombre" outlined dense label="Nombre" autofocus />
-          <div class="row q-col-gutter-sm">
-            <q-input v-model.number="planForm.precio" outlined dense type="number" label="Precio" class="col-6" />
-            <q-select v-model="planForm.periodicidad" outlined dense :options="['mensual', 'anual']" label="Periodicidad" class="col-6" />
+      <q-card class="k-dialog-md">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            Nuevo plan
           </div>
-          <div class="text-caption text-grey-7">Límites (0 = ilimitado)</div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
+        <q-card-section class="q-gutter-sm">
+          <q-input
+            v-model="planForm.nombre"
+            outlined
+            dense
+            label="Nombre"
+            autofocus
+          />
           <div class="row q-col-gutter-sm">
-            <q-input v-model.number="planForm.max_comprobantes" outlined dense type="number" label="Comprobantes/mes" class="col-4" />
-            <q-input v-model.number="planForm.max_empresas" outlined dense type="number" label="Empresas" class="col-4" />
-            <q-input v-model.number="planForm.max_usuarios" outlined dense type="number" label="Usuarios" class="col-4" />
+            <q-input
+              v-model.number="planForm.precio"
+              outlined
+              dense
+              type="number"
+              label="Precio"
+              class="col-6"
+            />
+            <q-select
+              v-model="planForm.periodicidad"
+              outlined
+              dense
+              :options="['mensual', 'anual']"
+              label="Periodicidad"
+              class="col-6"
+            />
+          </div>
+          <div class="text-caption text-grey-7">
+            Límites (0 = ilimitado)
+          </div>
+          <div class="row q-col-gutter-sm">
+            <q-input
+              v-model.number="planForm.max_comprobantes"
+              outlined
+              dense
+              type="number"
+              label="Comprobantes/mes"
+              class="col-4"
+            />
+            <q-input
+              v-model.number="planForm.max_empresas"
+              outlined
+              dense
+              type="number"
+              label="Empresas"
+              class="col-4"
+            />
+            <q-input
+              v-model.number="planForm.max_usuarios"
+              outlined
+              dense
+              type="number"
+              label="Usuarios"
+              class="col-4"
+            />
           </div>
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Guardar" :loading="savingPlan" @click="doCreatePlan" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Guardar"
+            :loading="savingPlan"
+            @click="doCreatePlan"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
     <!-- Diálogo: nueva suscripción -->
     <q-dialog v-model="showSub">
-      <q-card style="min-width: 360px">
-        <q-card-section class="text-h6">Nueva suscripción</q-card-section>
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">
+            Nueva suscripción
+          </div>
+          <q-space />
+          <q-btn
+            v-close-popup
+            flat
+            dense
+            round
+            icon="close"
+            aria-label="Cerrar"
+          />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
-          <q-select v-model="subForm.companyId" outlined dense :options="companyOptions" emit-value map-options label="Empresa" />
-          <q-select v-model="subForm.planId" outlined dense :options="planOptions" emit-value map-options label="Plan" />
-          <q-input v-model="subForm.periodoFin" outlined dense type="date" label="Vence (opcional)" />
+          <q-select
+            v-model="subForm.companyId"
+            outlined
+            dense
+            :options="companyOptions"
+            emit-value
+            map-options
+            label="Empresa"
+          />
+          <q-select
+            v-model="subForm.planId"
+            outlined
+            dense
+            :options="planOptions"
+            emit-value
+            map-options
+            label="Plan"
+          />
+          <q-input
+            v-model="subForm.periodoFin"
+            outlined
+            dense
+            type="date"
+            label="Vence (opcional)"
+          />
         </q-card-section>
         <q-card-actions align="right">
-          <q-btn v-close-popup flat label="Cancelar" />
-          <q-btn color="primary" label="Crear" :loading="savingSub" @click="doCreateSub" />
+          <q-btn
+            v-close-popup
+            flat
+            label="Cancelar"
+          />
+          <q-btn
+            color="primary"
+            label="Crear"
+            :loading="savingSub"
+            @click="doCreateSub"
+          />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -156,6 +435,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { QTableColumn } from 'quasar'
+import KTableSkeleton from '@/components/KTableSkeleton.vue'
 import { notify } from '@/lib/toast'
 import {
   getMyReseller,
@@ -237,7 +517,7 @@ const subsView = computed(() =>
 )
 
 async function loadAll() {
-  loading.value = true
+  loading.value = !companies.value.length && !plans.value.length && !subs.value.length
   try {
     reseller.value = await getMyReseller()
     if (!reseller.value) return
@@ -358,6 +638,8 @@ async function doSaveBranding() {
   savingBrand.value = true
   try {
     await updateBranding(reseller.value.id, branding.value)
+    // Sincroniza el estado local para que no quede la marca vieja tras guardar.
+    reseller.value.branding = { ...branding.value }
     notify({ type: 'positive', message: 'Marca guardada' })
   } catch (e) {
     notify({ type: 'negative', message: (e as Error).message })

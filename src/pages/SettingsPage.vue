@@ -3,7 +3,46 @@
     <div class="text-h5 q-mb-md">Configuración</div>
 
     <q-card class="q-mb-md">
-      <q-card-section class="text-h6">Datos de la empresa</q-card-section>
+      <q-card-section class="text-h6"> Datos de la empresa </q-card-section>
+
+      <q-card-section class="row items-center q-gutter-md">
+        <div class="k-logo-box">
+          <img
+            v-if="company.current?.logo_url"
+            :src="company.current.logo_url"
+            alt="Logo"
+            class="k-logo-img"
+          />
+          <q-icon v-else name="storefront" size="30px" class="text-grey-6" />
+        </div>
+        <div class="column q-gutter-xs">
+          <div class="text-caption text-grey-7">Logo de la empresa · se muestra en el sistema</div>
+          <div class="row q-gutter-sm">
+            <q-btn
+              outline
+              dense
+              no-caps
+              icon="upload"
+              :label="company.current?.logo_url ? 'Cambiar' : 'Subir logo'"
+              :loading="uploadingLogo"
+              @click="pickLogo"
+            />
+            <q-btn
+              v-if="company.current?.logo_url"
+              flat
+              dense
+              no-caps
+              color="negative"
+              icon="delete"
+              label="Quitar"
+              :disable="uploadingLogo"
+              @click="removeLogo"
+            />
+          </div>
+        </div>
+        <input ref="logoInput" type="file" accept="image/*" hidden @change="onLogoFile" />
+      </q-card-section>
+
       <q-card-section class="q-gutter-sm">
         <q-input v-model="companyForm.ruc" outlined readonly label="RUC" />
         <q-input
@@ -35,42 +74,30 @@
 
     <q-card class="q-mb-md">
       <q-card-section class="row items-center">
-        <div class="text-h6">Motor SUNAT (APISUNAT)</div>
+        <div class="text-h6">Emmisa Fiscal API</div>
         <q-space />
         <q-chip
-          :color="hasCreds ? 'positive' : 'grey-5'"
+          :color="fiscalStatus.configured ? 'positive' : 'grey-5'"
           text-color="white"
-          :icon="hasCreds ? 'check_circle' : 'info'"
-          :label="hasCreds ? 'Configurado' : 'Sin configurar (modo simulado)'"
+          :icon="fiscalStatus.configured ? 'check_circle' : 'info'"
+          :label="fiscalStatus.configured ? 'Conectado' : 'Pendiente de conexión'"
         />
       </q-card-section>
       <q-card-section class="q-gutter-sm">
-        <div class="text-caption text-grey-7">
-          Pega tu Persona ID y Token de APISUNAT. El token se guarda cifrado y
-          <b>nunca se lee de vuelta</b> desde la app; solo la Edge Function lo usa para emitir.
+        <div>
+          Emisión directa mediante nuestra API independiente, sin PSE de terceros.
         </div>
-        <q-select
-          v-model="credForm.provider"
-          outlined
-          dense
-          :options="[{ label: 'APISUNAT', value: 'apisunat' }, { label: 'Nubefact', value: 'nubefact' }]"
-          emit-value
-          map-options
-          label="Proveedor"
-        />
-        <q-input v-model="credForm.personaId" outlined dense label="Persona ID" />
-        <q-input
-          v-model="credForm.token"
-          outlined
-          dense
-          type="password"
-          label="Token"
-          hint="Se guarda de forma segura; déjalo vacío para no cambiarlo"
+        <div class="text-caption text-grey-7">
+          La API key está protegida como secreto del backend y nunca se envía a este
+          navegador. El emisor se valida contra el RUC de esta empresa antes de emitir.
+        </div>
+        <q-badge
+          v-if="fiscalStatus.configured"
+          outline
+          color="primary"
+          :label="fiscalStatus.environment === 'production' ? 'Producción' : 'Beta SUNAT'"
         />
       </q-card-section>
-      <q-card-actions align="right">
-        <q-btn color="primary" label="Guardar credenciales" :loading="savingCreds" @click="saveCreds" />
-      </q-card-actions>
     </q-card>
 
     <q-card>
@@ -90,16 +117,31 @@
         >
           <template #body-cell-acciones="props">
             <q-td :props="props" class="text-right">
-              <q-btn flat round dense icon="delete" size="sm" color="negative" @click="removeSerie(props.row)" />
+              <q-btn
+                flat
+                round
+                dense
+                icon="delete"
+                size="sm"
+                color="negative"
+                @click="removeSerie(props.row)"
+              />
             </q-td>
+          </template>
+          <template #loading>
+            <KTableSkeleton />
           </template>
         </q-table>
       </q-card-section>
     </q-card>
 
     <q-dialog v-model="showSerie">
-      <q-card style="min-width: 340px">
-        <q-card-section class="text-h6">Nueva serie</q-card-section>
+      <q-card class="k-dialog-sm">
+        <q-card-section class="k-modal-head">
+          <div class="text-h6">Nueva serie</div>
+          <q-space />
+          <q-btn v-close-popup flat dense round icon="close" aria-label="Cerrar" />
+        </q-card-section>
         <q-card-section class="q-gutter-sm">
           <q-select
             v-model="serieForm.tipo_doc"
@@ -132,13 +174,15 @@
 import { onMounted, ref } from 'vue'
 import { useQuasar, type QTableColumn } from 'quasar'
 import { useCompanyStore } from '@/stores/company'
+import KTableSkeleton from '@/components/KTableSkeleton.vue'
 import {
   updateCompany,
+  uploadCompanyLogo,
   listSeries,
   createSerie,
   deleteSerie,
-  tieneCredenciales,
-  guardarCredenciales,
+  estadoIntegracionFiscal,
+  type FiscalIntegrationStatus,
   type Serie,
   type SerieTipoDoc,
 } from '@/modules/settings/settings.api'
@@ -149,13 +193,17 @@ import { notify } from '@/lib/toast'
 const $q = useQuasar()
 const company = useCompanyStore()
 
-const companyForm = ref<{ ruc: string; razon_social: string; direccion: string; regimen: Regimen }>({
-  ruc: '',
-  razon_social: '',
-  direccion: '',
-  regimen: 'RER',
-})
+const companyForm = ref<{ ruc: string; razon_social: string; direccion: string; regimen: Regimen }>(
+  {
+    ruc: '',
+    razon_social: '',
+    direccion: '',
+    regimen: 'RER',
+  },
+)
 const savingCompany = ref(false)
+const uploadingLogo = ref(false)
+const logoInput = ref<HTMLInputElement | null>(null)
 
 const regimenOptions: { label: string; value: Regimen }[] = [
   { label: 'RER', value: 'RER' },
@@ -164,44 +212,17 @@ const regimenOptions: { label: string; value: Regimen }[] = [
   { label: 'NRUS', value: 'NRUS' },
 ]
 
-// Credenciales del emisor
-const hasCreds = ref(false)
-const savingCreds = ref(false)
-const credForm = ref<{ provider: string; personaId: string; token: string }>({
-  provider: 'apisunat',
-  personaId: '',
-  token: '',
+const fiscalStatus = ref<FiscalIntegrationStatus>({
+  configured: false,
+  environment: null,
 })
 
 async function loadCreds() {
   if (!company.current) return
   try {
-    hasCreds.value = await tieneCredenciales(company.current.id)
+    fiscalStatus.value = await estadoIntegracionFiscal(company.current.id)
   } catch {
-    /* la migración de plataforma puede no estar aplicada aún */
-  }
-}
-
-async function saveCreds() {
-  if (!company.current) return
-  if (!credForm.value.personaId || !credForm.value.token) {
-    notify({ type: 'warning', message: 'Completa Persona ID y Token' })
-    return
-  }
-  savingCreds.value = true
-  try {
-    await guardarCredenciales(company.current.id, {
-      provider: credForm.value.provider,
-      personaId: credForm.value.personaId,
-      token: credForm.value.token,
-    })
-    credForm.value.token = ''
-    await loadCreds()
-    notify({ type: 'positive', message: 'Credenciales guardadas' })
-  } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
-  } finally {
-    savingCreds.value = false
+    fiscalStatus.value = { configured: false, environment: null }
   }
 }
 
@@ -249,8 +270,9 @@ function removeSerie(row: Serie) {
     cancel: true,
     persistent: true,
   }).onOk(async () => {
+    if (!company.current) return
     try {
-      await deleteSerie(row.id)
+      await deleteSerie(company.current.id, row.id)
       await loadSeries()
       notify({ type: 'positive', message: 'Serie eliminada' })
     } catch (e) {
@@ -271,7 +293,7 @@ function fillCompanyForm() {
 
 async function loadSeries() {
   if (!company.current) return
-  loadingSeries.value = true
+  loadingSeries.value = !seriesRows.value.length
   try {
     seriesRows.value = await listSeries(company.current.id)
   } catch (e) {
@@ -299,7 +321,7 @@ async function saveCompany() {
       direccion: companyForm.value.direccion,
       regimen: companyForm.value.regimen,
     })
-    await company.load()
+    await company.load(true)
     companyForm.value = {
       ruc: updated.ruc,
       razon_social: updated.razon_social,
@@ -311,6 +333,49 @@ async function saveCompany() {
     notify({ type: 'negative', message: (e as Error).message })
   } finally {
     savingCompany.value = false
+  }
+}
+
+function pickLogo() {
+  logoInput.value?.click()
+}
+async function onLogoFile(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file || !company.current) return
+  uploadingLogo.value = true
+  try {
+    const url = await uploadCompanyLogo(company.current.id, file)
+    await updateCompany(company.current.id, {
+      razon_social: company.current.razon_social,
+      direccion: company.current.direccion,
+      regimen: company.current.regimen,
+      logo_url: url,
+    })
+    await company.load(true)
+    notify({ type: 'positive', message: 'Logo actualizado' })
+  } catch (err) {
+    notify({ type: 'negative', message: (err as Error).message })
+  } finally {
+    uploadingLogo.value = false
+    if (logoInput.value) logoInput.value.value = ''
+  }
+}
+async function removeLogo() {
+  if (!company.current) return
+  uploadingLogo.value = true
+  try {
+    await updateCompany(company.current.id, {
+      razon_social: company.current.razon_social,
+      direccion: company.current.direccion,
+      regimen: company.current.regimen,
+      logo_url: null,
+    })
+    await company.load(true)
+    notify({ type: 'positive', message: 'Logo quitado' })
+  } catch (err) {
+    notify({ type: 'negative', message: (err as Error).message })
+  } finally {
+    uploadingLogo.value = false
   }
 }
 
@@ -348,3 +413,23 @@ onMounted(() => {
   loadCreds()
 })
 </script>
+
+<style scoped>
+.k-logo-box {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  background: var(--k-surface-2);
+  border: 1px solid var(--k-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.k-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+</style>

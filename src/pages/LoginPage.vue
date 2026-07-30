@@ -10,11 +10,19 @@
         <div class="k-login-side col column flex-center">
           <div class="k-login-inner">
             <div class="lt-md q-mb-lg">
-              <img class="k-logo" src="/brand/badge.svg" alt="Emmisa" />
+              <img
+                class="k-logo"
+                src="/brand/badge.svg"
+                alt="Emmisa"
+              >
             </div>
 
-            <div class="text-h4 text-weight-bold">Inicia sesión</div>
-            <div class="text-body2 text-muted q-mb-xl">Bienvenido de nuevo a Emmisa</div>
+            <div class="text-h4 text-weight-bold">
+              Inicia sesión
+            </div>
+            <div class="text-body2 text-muted q-mb-xl">
+              Bienvenido de nuevo a Emmisa
+            </div>
 
             <q-form @submit.prevent="submit">
               <q-input
@@ -27,12 +35,23 @@
               />
               <q-input
                 v-model="password"
-                class="q-mb-md"
+                class="q-mb-xs"
                 outlined
                 type="password"
                 label="Contraseña"
                 :rules="passwordRules"
               />
+              <div class="row justify-end q-mb-md">
+                <q-btn
+                  flat
+                  dense
+                  no-caps
+                  size="sm"
+                  color="primary"
+                  label="¿Olvidaste tu contraseña?"
+                  :to="{ name: 'forgot-password' }"
+                />
+              </div>
               <q-btn
                 type="submit"
                 unelevated
@@ -63,7 +82,14 @@
 
             <div class="text-center q-mt-lg text-caption text-muted">
               ¿No tienes cuenta?
-              <q-btn flat dense no-caps color="primary" label="Regístrate" :to="{ name: 'register' }" />
+              <q-btn
+                flat
+                dense
+                no-caps
+                color="primary"
+                label="Regístrate"
+                :to="{ name: 'register' }"
+              />
             </div>
           </div>
         </div>
@@ -79,6 +105,7 @@ import { useAuthStore } from '@/stores/auth'
 import AuthHero from '@/components/AuthHero.vue'
 import { required, emailRules, validate } from '@/lib/validation'
 import { notify } from '@/lib/toast'
+import { authErrorMessage } from '@/lib/authErrors'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -96,7 +123,7 @@ async function loginGoogle() {
   try {
     await auth.signInWithGoogle()
   } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
+    notify({ type: 'negative', message: authErrorMessage(e) })
     googleLoading.value = false
   }
 }
@@ -115,7 +142,7 @@ async function submit() {
     await auth.signIn(email.value, password.value)
     if (auth.user) router.push({ name: 'dashboard' })
   } catch (e) {
-    notify({ type: 'negative', message: (e as Error).message })
+    notify({ type: 'negative', message: authErrorMessage(e) })
   } finally {
     loading.value = false
   }

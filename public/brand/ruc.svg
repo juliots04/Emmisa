@@ -1,0 +1,7 @@
+<!-- Acceso directo a Consulta RUC (SUNAT) · tile con wordmark -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Consultar RUC">
+  <rect width="48" height="48" rx="10" fill="#ffffff" />
+  <text x="24" y="25" text-anchor="middle" dominant-baseline="central"
+        font-family="'Hanken Grotesk', Arial, sans-serif" font-size="14" font-weight="800"
+        letter-spacing="0.3" fill="#0a3d91">RUC</text>
+</svg>

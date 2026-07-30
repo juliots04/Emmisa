@@ -1,6 +1,4 @@
-// Contrato del "motor" de facturación (SUNAT).
-// Cualquier proveedor (Mock, APISUNAT, Nubefact, Greenter...) implementa esta interfaz.
-// Así se cambia de proveedor sin tocar el resto de la app.
+// Tipos compartidos del flujo de facturación.
 
 export interface EmitCliente {
   tipoDoc: string // 1 = DNI, 6 = RUC
@@ -29,7 +27,7 @@ export interface EmitResult {
   pdfUrl?: string
   hash?: string
   ticket?: string
-  /** true cuando se emitió en modo simulado (sin credenciales / función sin desplegar). */
+  /** Siempre false en el flujo real; se conserva por compatibilidad de interfaz. */
   simulado?: boolean
   mensaje?: string
 }
